@@ -1,0 +1,1412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Investment Decision Engine</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #080c14; --bg2: #0d1420; --card: #111827; --card2: #151f2e;
+  --border: #1e2d42; --border2: #243347;
+  --accent: #00d4aa; --blue: #3b82f6; --yellow: #f59e0b;
+  --red: #ef4444; --green: #10b981; --purple: #8b5cf6;
+  --t1: #e2e8f0; --t2: #8b9cb5; --t3: #4a5568;
+  --fd: 'Syne',sans-serif; --fm: 'DM Mono',monospace; --fb: 'DM Sans',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:var(--fb);background:var(--bg);color:var(--t1);min-height:100vh;
+  background-image:radial-gradient(ellipse at 10% 10%,rgba(0,212,170,.04) 0%,transparent 50%),
+  radial-gradient(ellipse at 90% 80%,rgba(59,130,246,.04) 0%,transparent 50%);}
+
+/* TOPBAR */
+.topbar{background:rgba(13,20,32,.96);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);
+  position:sticky;top:0;z-index:100;padding:0 2rem;}
+.topbar-inner{max-width:1400px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;height:60px;}
+.logo{display:flex;align-items:center;gap:10px;font-family:var(--fd);font-weight:800;font-size:1.05rem;letter-spacing:-.5px;}
+.logo-icon{width:32px;height:32px;background:linear-gradient(135deg,var(--accent),var(--blue));
+  border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.9rem;}
+.nav-tabs{display:flex;gap:4px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:4px;}
+.nav-tab{padding:6px 16px;border-radius:7px;font-size:.8rem;font-weight:500;cursor:pointer;
+  transition:all .2s;color:var(--t2);border:none;background:none;font-family:var(--fb);}
+.nav-tab.active{background:linear-gradient(135deg,var(--accent),#00b38f);color:#080c14;font-weight:700;}
+.nav-tab:hover:not(.active){color:var(--t1);background:var(--border);}
+
+/* LAYOUT */
+.main{max-width:1400px;margin:0 auto;padding:2rem;}
+.page{display:none;}.page.active{display:block;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem;}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;}
+.gap2{gap:2rem;}
+
+/* CARD */
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:1.5rem;
+  box-shadow:0 4px 24px rgba(0,0,0,.4);transition:border-color .2s;}
+.card:hover{border-color:var(--border2);}
+.card-title{font-family:var(--fd);font-size:1rem;font-weight:700;margin-bottom:1.2rem;
+  display:flex;align-items:center;gap:8px;}
+.cicon{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:.85rem;}
+
+/* FORM */
+.fg{margin-bottom:1rem;}
+.fl{display:block;font-size:.72rem;font-weight:500;color:var(--t2);margin-bottom:5px;
+  letter-spacing:.3px;text-transform:uppercase;font-family:var(--fm);}
+.fi{width:100%;padding:10px 14px;background:var(--bg2);border:1px solid var(--border);
+  border-radius:8px;color:var(--t1);font-family:var(--fb);font-size:.9rem;transition:border-color .2s,box-shadow .2s;}
+.fi:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,212,170,.1);}
+select.fi option{background:var(--card);}
+
+/* BUTTONS */
+.btn{padding:10px 20px;border-radius:8px;font-weight:600;font-size:.88rem;cursor:pointer;
+  border:none;transition:all .2s;font-family:var(--fb);}
+.btn-p{background:linear-gradient(135deg,var(--accent),#00b38f);color:#080c14;}
+.btn-p:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,212,170,.3);}
+.btn-s{background:var(--card2);border:1px solid var(--border);color:var(--t1);}
+.btn-s:hover{border-color:var(--accent);color:var(--accent);}
+.btn-d{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);color:var(--red);}
+.btn-sm{padding:6px 12px;font-size:.78rem;}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:1.2rem;}
+
+/* ASSET TYPE SELECTOR */
+.at-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:2rem;}
+.at-btn{background:var(--card);border:2px solid var(--border);border-radius:12px;
+  padding:1rem .5rem;text-align:center;cursor:pointer;transition:all .2s;}
+.at-btn .at-icon{font-size:1.5rem;margin-bottom:6px;display:block;}
+.at-btn .at-lbl{font-size:.75rem;font-weight:600;color:var(--t2);}
+.at-btn.active{border-color:var(--accent);background:rgba(0,212,170,.08);box-shadow:0 0 20px rgba(0,212,170,.12);}
+.at-btn.active .at-lbl{color:var(--accent);}
+.at-btn:hover:not(.active){border-color:var(--border2);}
+
+/* FORMS TOGGLE */
+.aform{display:none;}.aform.active{display:block;}
+
+/* RESULTS */
+.rpanel{background:linear-gradient(135deg,rgba(0,212,170,.05),rgba(59,130,246,.05));
+  border:1px solid var(--accent);border-radius:16px;padding:1.5rem;animation:fadeIn .4s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+/* SCORE RING */
+.sring-wrap{display:flex;flex-direction:column;align-items:center;gap:.4rem;padding:.5rem;}
+.sring{position:relative;width:120px;height:120px;}
+.sring svg{transform:rotate(-90deg);}
+.sring-label{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:var(--fd);}
+.snum{font-size:2rem;font-weight:800;line-height:1;}
+.ssub{font-size:.65rem;color:var(--t2);font-family:var(--fm);}
+
+/* BADGE */
+.badge{display:inline-flex;align-items:center;gap:5px;padding:5px 13px;border-radius:20px;
+  font-size:.78rem;font-weight:700;font-family:var(--fd);}
+.b-exc{background:rgba(0,212,170,.15);color:var(--accent);border:1px solid rgba(0,212,170,.3);}
+.b-sbuy{background:rgba(16,185,129,.15);color:var(--green);border:1px solid rgba(16,185,129,.3);}
+.b-buy{background:rgba(59,130,246,.15);color:var(--blue);border:1px solid rgba(59,130,246,.3);}
+.b-hold{background:rgba(245,158,11,.15);color:var(--yellow);border:1px solid rgba(245,158,11,.3);}
+.b-watch{background:rgba(139,92,246,.15);color:var(--purple);border:1px solid rgba(139,92,246,.3);}
+.b-avoid{background:rgba(239,68,68,.15);color:var(--red);border:1px solid rgba(239,68,68,.3);}
+
+/* PROGRESS */
+.prow{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.plbl{font-size:.76rem;color:var(--t2);min-width:160px;font-family:var(--fm);}
+.ptrack{flex:1;height:6px;background:var(--bg2);border-radius:4px;overflow:hidden;}
+.pbar{height:100%;border-radius:4px;transition:width .8s ease;}
+.pval{font-size:.76rem;font-weight:600;min-width:38px;text-align:right;font-family:var(--fm);}
+
+/* STAT */
+.stat{background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:1rem 1.2rem;}
+.slbl{font-size:.7rem;color:var(--t2);text-transform:uppercase;letter-spacing:.5px;font-family:var(--fm);}
+.sval{font-size:1.4rem;font-weight:700;font-family:var(--fd);margin-top:4px;}
+
+/* EXPLANATION */
+.expl{background:var(--bg2);border-radius:10px;padding:1rem 1.2rem;margin-top:1rem;
+  border-left:3px solid var(--accent);font-size:.87rem;line-height:1.75;color:var(--t1);}
+.expl strong{color:var(--accent);}
+
+/* AI COACH */
+.ai-box{background:linear-gradient(135deg,rgba(139,92,246,.08),rgba(59,130,246,.05));
+  border:1px solid rgba(139,92,246,.3);border-radius:14px;padding:1.4rem;margin-top:1rem;}
+.ai-title{font-family:var(--fd);font-size:.9rem;font-weight:700;margin-bottom:.8rem;
+  display:flex;align-items:center;gap:6px;}
+.ai-dot{width:8px;height:8px;border-radius:50%;background:var(--purple);animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.ai-list{list-style:none;}
+.ai-list li{padding:3px 0;padding-left:1.2rem;position:relative;font-size:.83rem;
+  color:var(--t1);line-height:1.6;}
+.ai-list li::before{content:'→';position:absolute;left:0;color:var(--accent);font-weight:700;}
+.ai-cat{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;
+  margin-bottom:6px;font-family:var(--fm);}
+
+/* SECTION HEADER */
+.sh{margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:1px solid var(--border);}
+.st{font-family:var(--fd);font-size:1.35rem;font-weight:800;letter-spacing:-.5px;}
+.ss{color:var(--t2);font-size:.84rem;margin-top:4px;}
+
+/* PORTFOLIO */
+.p-add{background:var(--card2);border:1px dashed var(--border2);border-radius:12px;
+  padding:1.2rem;margin-bottom:1.5rem;}
+.tw{overflow-x:auto;border-radius:10px;border:1px solid var(--border);}
+table{width:100%;border-collapse:collapse;}
+th{background:var(--card2);padding:10px 14px;text-align:left;font-size:.7rem;font-weight:600;
+  color:var(--t2);text-transform:uppercase;letter-spacing:.5px;font-family:var(--fm);
+  border-bottom:1px solid var(--border);}
+td{padding:10px 14px;font-size:.84rem;border-bottom:1px solid rgba(30,45,66,.5);}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:rgba(255,255,255,.02);}
+
+/* MONTE CARLO */
+.sc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-top:1rem;}
+.sc-card{border-radius:12px;padding:1rem 1.2rem;text-align:center;}
+.sc-bear{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);}
+.sc-base{background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.25);}
+.sc-bull{background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.25);}
+.sc-name{font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;
+  margin-bottom:.5rem;font-family:var(--fm);}
+.sc-val{font-size:1.25rem;font-weight:800;font-family:var(--fd);}
+
+/* HISTORY */
+.hi{background:var(--card2);border:1px solid var(--border);border-radius:10px;
+  padding:12px 14px;margin-bottom:8px;display:flex;justify-content:space-between;
+  align-items:center;cursor:pointer;transition:border-color .2s;}
+.hi:hover{border-color:var(--accent);}
+.hi-meta{font-size:.7rem;color:var(--t3);font-family:var(--fm);}
+
+/* TOAST */
+.toast{position:fixed;bottom:2rem;right:2rem;background:var(--card);border:1px solid var(--accent);
+  border-radius:10px;padding:12px 18px;font-size:.84rem;z-index:1000;display:none;
+  box-shadow:0 8px 24px rgba(0,0,0,.4);animation:slideUp .3s ease;}
+.toast.show{display:block;}
+@keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+
+/* HELPERS */
+.divider{height:1px;background:var(--border);margin:1.2rem 0;}
+.mt1{margin-top:.5rem;}.mt2{margin-top:1rem;}.mt3{margin-top:1.5rem;}
+.mb1{margin-bottom:.5rem;}.mb2{margin-bottom:1rem;}
+.flex{display:flex;}.aic{align-items:center;}.jb{justify-content:space-between;}
+.tc{text-align:center;}
+.c-acc{color:var(--accent);}.c-g{color:var(--green);}.c-r{color:var(--red);}
+.c-y{color:var(--yellow);}.c-b{color:var(--blue);}.c-p{color:var(--purple);}.c-t2{color:var(--t2);}
+.fw7{font-weight:700;}.fw8{font-weight:800;}
+.tag{display:inline-block;padding:2px 8px;border-radius:5px;font-size:.68rem;font-family:var(--fm);}
+.tag-b{background:rgba(59,130,246,.15);color:var(--blue);}
+.chart-box{position:relative;}
+
+/* RESPONSIVE */
+@media(max-width:900px){
+  .grid2,.grid3,.grid4{grid-template-columns:1fr;}
+  .at-grid{grid-template-columns:repeat(3,1fr);}
+  .sc-grid{grid-template-columns:1fr;}
+  .nav-tabs{display:none;}
+}
+@media(max-width:600px){
+  .main{padding:1rem;}
+  .at-grid{grid-template-columns:repeat(2,1fr);}
+}
+.mob-nav{overflow-x:auto;display:none;gap:6px;padding:10px;
+  background:var(--bg2);border-bottom:1px solid var(--border);}
+@media(max-width:900px){.mob-nav{display:flex;}}
+.mob-nav::-webkit-scrollbar{height:0;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="logo"><div class="logo-icon">📈</div>Investment Decision Engine</div>
+    <div class="nav-tabs">
+      <button class="nav-tab" data-page="analyzer" onclick="showPage('analyzer')">Analyzer</button>
+      <button class="nav-tab" data-page="portfolio" onclick="showPage('portfolio')">Portfolio</button>
+      <button class="nav-tab" data-page="montecarlo" onclick="showPage('montecarlo')">Monte Carlo</button>
+      <button class="nav-tab" data-page="history" onclick="showPage('history')">History</button>
+    </div>
+  </div>
+</div>
+
+<div class="mob-nav">
+  <button class="nav-tab" data-page="analyzer" onclick="showPage('analyzer')">📊 Analyzer</button>
+  <button class="nav-tab" data-page="portfolio" onclick="showPage('portfolio')">💼 Portfolio</button>
+  <button class="nav-tab" data-page="montecarlo" onclick="showPage('montecarlo')">🎲 Monte Carlo</button>
+  <button class="nav-tab" data-page="history" onclick="showPage('history')">📋 History</button>
+</div>
+
+<div class="main">
+
+<!-- ===== ANALYZER ===== -->
+<div id="page-analyzer" class="page">
+  <div class="sh"><div class="st">Asset Analyzer</div><div class="ss">Score investments using weighted financial models</div></div>
+
+  <div class="at-grid">
+    <div class="at-btn" data-asset="indian-stock" onclick="selectAsset('indian-stock',this)"><span class="at-icon">🇮🇳</span><span class="at-lbl">Indian Stock</span></div>
+    <div class="at-btn" data-asset="us-stock" onclick="selectAsset('us-stock',this)"><span class="at-icon">🇺🇸</span><span class="at-lbl">US Stock</span></div>
+    <div class="at-btn" data-asset="index-fund" onclick="selectAsset('index-fund',this)"><span class="at-icon">📊</span><span class="at-lbl">Index Fund</span></div>
+    <div class="at-btn" data-asset="etf" onclick="selectAsset('etf',this)"><span class="at-icon">🏦</span><span class="at-lbl">ETF</span></div>
+    <div class="at-btn" data-asset="bond" onclick="selectAsset('bond',this)"><span class="at-icon">📜</span><span class="at-lbl">Bond</span></div>
+    <div class="at-btn" data-asset="sgb" onclick="selectAsset('sgb',this)"><span class="at-icon">🪙</span><span class="at-lbl">SGB</span></div>
+  </div>
+
+  <div class="grid2 gap2">
+    <div>
+      <!-- INDIAN STOCK -->
+      <div id="form-indian-stock" class="aform">
+        <div class="card">
+          <div class="card-title"><span class="cicon" style="background:rgba(0,212,170,.15)">🇮🇳</span>Indian Stock Analyzer</div>
+          <div class="fg"><label class="fl">Stock Name / Ticker</label><input class="fi" id="is-name" placeholder="e.g. RELIANCE"/></div>
+          <div class="grid2">
+            <div class="fg"><label class="fl">Revenue CAGR %</label><input class="fi" id="is-rev" type="number" placeholder="15"/></div>
+            <div class="fg"><label class="fl">Profit CAGR %</label><input class="fi" id="is-prf" type="number" placeholder="20"/></div>
+            <div class="fg"><label class="fl">ROE %</label><input class="fi" id="is-roe" type="number" placeholder="18"/></div>
+            <div class="fg"><label class="fl">ROCE %</label><input class="fi" id="is-roce" type="number" placeholder="22"/></div>
+            <div class="fg"><label class="fl">Debt to Equity</label><input class="fi" id="is-de" type="number" placeholder="0.5" step="0.01"/></div>
+            <div class="fg"><label class="fl">Current PE</label><input class="fi" id="is-pe" type="number" placeholder="25"/></div>
+            <div class="fg"><label class="fl">Industry PE</label><input class="fi" id="is-ipe" type="number" placeholder="30"/></div>
+            <div class="fg"><label class="fl">PEG Ratio</label><input class="fi" id="is-peg" type="number" placeholder="1.2" step="0.01"/></div>
+            <div class="fg"><label class="fl">Promoter Holding %</label><input class="fi" id="is-promo" type="number" placeholder="65"/></div>
+            <div class="fg"><label class="fl">Promoter Pledge %</label><input class="fi" id="is-pledge" type="number" placeholder="5"/></div>
+          </div>
+          <div class="fg"><label class="fl">FCF Growth %</label><input class="fi" id="is-fcf" type="number" placeholder="12"/></div>
+          <div class="btn-row">
+            <button class="btn btn-p" onclick="analyzeIndianStock()">⚡ Analyze Stock</button>
+            <button class="btn btn-s" onclick="clearAnalyzerForm()">Clear</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- US STOCK -->
+      <div id="form-us-stock" class="aform">
+        <div class="card">
+          <div class="card-title"><span class="cicon" style="background:rgba(59,130,246,.15)">🇺🇸</span>US Stock Analyzer</div>
+          <div class="fg"><label class="fl">Stock Name / Ticker</label><input class="fi" id="us-name" placeholder="e.g. AAPL"/></div>
+          <div class="grid2">
+            <div class="fg"><label class="fl">Revenue CAGR %</label><input class="fi" id="us-rev" type="number" placeholder="12"/></div>
+            <div class="fg"><label class="fl">EPS CAGR %</label><input class="fi" id="us-eps" type="number" placeholder="15"/></div>
+            <div class="fg"><label class="fl">Gross Margin %</label><input class="fi" id="us-gm" type="number" placeholder="42"/></div>
+            <div class="fg"><label class="fl">Net Margin %</label><input class="fi" id="us-nm" type="number" placeholder="25"/></div>
+            <div class="fg"><label class="fl">P/E Ratio</label><input class="fi" id="us-pe" type="number" placeholder="28"/></div>
+            <div class="fg"><label class="fl">P/S Ratio</label><input class="fi" id="us-ps" type="number" placeholder="6"/></div>
+            <div class="fg"><label class="fl">Debt/EBITDA</label><input class="fi" id="us-de" type="number" placeholder="1.5" step="0.01"/></div>
+            <div class="fg"><label class="fl">FCF Yield %</label><input class="fi" id="us-fcf" type="number" placeholder="4"/></div>
+            <div class="fg"><label class="fl">Insider Ownership %</label><input class="fi" id="us-ins" type="number" placeholder="8"/></div>
+            <div class="fg"><label class="fl">Buyback Yield %</label><input class="fi" id="us-bb" type="number" placeholder="3"/></div>
+          </div>
+          <div class="btn-row">
+            <button class="btn btn-p" onclick="analyzeUSStock()">⚡ Analyze Stock</button>
+            <button class="btn btn-s" onclick="clearAnalyzerForm()">Clear</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- INDEX FUND -->
+      <div id="form-index-fund" class="aform">
+        <div class="card">
+          <div class="card-title"><span class="cicon" style="background:rgba(245,158,11,.15)">📊</span>Index Fund Analyzer</div>
+          <div class="fg"><label class="fl">Fund Name</label><input class="fi" id="if-name" placeholder="e.g. Nifty 50 Index Fund"/></div>
+          <div class="grid2">
+            <div class="fg"><label class="fl">Expense Ratio %</label><input class="fi" id="if-er" type="number" placeholder="0.1" step="0.01"/></div>
+            <div class="fg"><label class="fl">Tracking Error %</label><input class="fi" id="if-te" type="number" placeholder="0.05" step="0.01"/></div>
+            <div class="fg"><label class="fl">AUM (₹ Cr)</label><input class="fi" id="if-aum" type="number" placeholder="5000"/></div>
+            <div class="fg"><label class="fl">Fund Age (Years)</label><input class="fi" id="if-age" type="number" placeholder="8"/></div>
+          </div>
+          <div class="btn-row">
+            <button class="btn btn-p" onclick="analyzeIndexFund()">⚡ Analyze Fund</button>
+            <button class="btn btn-s" onclick="clearAnalyzerForm()">Clear</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ETF -->
+      <div id="form-etf" class="aform">
+        <div class="card">
+          <div class="card-title"><span class="cicon" style="background:rgba(139,92,246,.15)">🏦</span>ETF Analyzer</div>
+          <div class="fg"><label class="fl">ETF Name</label><input class="fi" id="etf-name" placeholder="e.g. Nifty BeES"/></div>
+          <div class="grid2">
+            <div class="fg"><label class="fl">Expense Ratio %</label><input class="fi" id="etf-er" type="number" placeholder="0.05" step="0.01"/></div>
+            <div class="fg"><label class="fl">Tracking Error %</label><input class="fi" id="etf-te" type="number" placeholder="0.08" step="0.01"/></div>
+            <div class="fg"><label class="fl">AUM (₹ Cr)</label><input class="fi" id="etf-aum" type="number" placeholder="12000"/></div>
+            <div class="fg"><label class="fl">Underlying Index CAGR %</label><input class="fi" id="etf-cagr" type="number" placeholder="13"/></div>
+          </div>
+          <div class="btn-row">
+            <button class="btn btn-p" onclick="analyzeETF()">⚡ Analyze ETF</button>
+            <button class="btn btn-s" onclick="clearAnalyzerForm()">Clear</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- BOND -->
+      <div id="form-bond" class="aform">
+        <div class="card">
+          <div class="card-title"><span class="cicon" style="background:rgba(16,185,129,.15)">📜</span>Bond Analyzer</div>
+          <div class="fg"><label class="fl">Bond Name / Issuer</label><input class="fi" id="bond-name" placeholder="e.g. REC NCD Series"/></div>
+          <div class="grid2">
+            <div class="fg"><label class="fl">Credit Rating</label>
+              <select class="fi" id="bond-rating"><option>AAA</option><option>AA+</option><option>AA</option><option>AA-</option><option>A</option><option>BBB</option></select>
+            </div>
+            <div class="fg"><label class="fl">Yield %</label><input class="fi" id="bond-yield" type="number" placeholder="8.5" step="0.1"/></div>
+            <div class="fg"><label class="fl">Duration (Years)</label><input class="fi" id="bond-dur" type="number" placeholder="5" step="0.5"/></div>
+            <div class="fg"><label class="fl">Liquidity Score (1–10)</label><input class="fi" id="bond-liq" type="number" placeholder="7" min="1" max="10"/></div>
+          </div>
+          <div class="btn-row">
+            <button class="btn btn-p" onclick="analyzeBond()">⚡ Analyze Bond</button>
+            <button class="btn btn-s" onclick="clearAnalyzerForm()">Clear</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- SGB -->
+      <div id="form-sgb" class="aform">
+        <div class="card">
+          <div class="card-title"><span class="cicon" style="background:rgba(245,158,11,.15)">🪙</span>SGB Analyzer</div>
+          <div class="fg"><label class="fl">SGB Series / Name</label><input class="fi" id="sgb-name" placeholder="e.g. SGB 2022-23 Series III"/></div>
+          <div class="grid2">
+            <div class="fg"><label class="fl">Purchase Price (₹/g)</label><input class="fi" id="sgb-buy" type="number" placeholder="5400"/></div>
+            <div class="fg"><label class="fl">Current Gold Price (₹/g)</label><input class="fi" id="sgb-cur" type="number" placeholder="6200"/></div>
+            <div class="fg"><label class="fl">Years Remaining</label><input class="fi" id="sgb-yrs" type="number" placeholder="5" step="0.5"/></div>
+            <div class="fg"><label class="fl">Interest Rate % p.a.</label><input class="fi" id="sgb-rate" type="number" placeholder="2.5" step="0.1"/></div>
+          </div>
+          <div class="btn-row">
+            <button class="btn btn-p" onclick="analyzeSGB()">⚡ Analyze SGB</button>
+            <button class="btn btn-s" onclick="clearAnalyzerForm()">Clear</button>
+          </div>
+        </div>
+      </div>
+    </div><!-- /left col -->
+
+    <!-- RESULTS -->
+    <div>
+      <div id="resultsArea">
+        <div class="card tc" style="padding:3rem 1rem;">
+          <div style="font-size:3rem;margin-bottom:1rem">📊</div>
+          <div style="font-family:var(--fd);font-size:1.1rem;font-weight:700;color:var(--t2)">Results appear here</div>
+          <div style="font-size:.82rem;color:var(--t3);margin-top:6px">Fill in the form and click Analyze</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHARTS ROW -->
+  <div id="chartsRow" style="display:none" class="mt3">
+    <div class="grid2 gap2 mt2">
+      <div class="card"><div class="card-title"><span class="cicon" style="background:rgba(0,212,170,.15)">🕸️</span>Factor Radar</div>
+        <div class="chart-box" style="height:300px"><canvas id="radarChart"></canvas></div></div>
+      <div class="card"><div class="card-title"><span class="cicon" style="background:rgba(59,130,246,.15)">📊</span>Score Breakdown</div>
+        <div class="chart-box" style="height:300px"><canvas id="barChart"></canvas></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== PORTFOLIO ===== -->
+<div id="page-portfolio" class="page">
+  <div class="sh flex jb aic">
+    <div><div class="st">Portfolio Analyzer</div><div class="ss">Track your investments and analyze allocation</div></div>
+  </div>
+
+  <div class="p-add">
+    <div style="font-family:var(--fd);font-size:.9rem;font-weight:700;margin-bottom:1rem">➕ Add Asset</div>
+    <div class="grid4">
+      <div class="fg"><label class="fl">Asset Name</label><input class="fi" id="p-name" placeholder="e.g. HDFC Bank"/></div>
+      <div class="fg"><label class="fl">Asset Type</label>
+        <select class="fi" id="p-type">
+          <option>Indian Stock</option><option>US Stock</option><option>Index Fund</option>
+          <option>ETF</option><option>Bond</option><option>SGB</option>
+          <option>Crypto</option><option>Real Estate</option><option>Gold</option><option>Cash</option>
+        </select>
+      </div>
+      <div class="fg"><label class="fl">Invested Amount (₹)</label><input class="fi" id="p-inv" type="number" placeholder="50000"/></div>
+      <div class="fg"><label class="fl">Current Value (₹)</label><input class="fi" id="p-cur" type="number" placeholder="65000"/></div>
+    </div>
+    <button class="btn btn-p" onclick="addAsset()">+ Add to Portfolio</button>
+  </div>
+
+  <div id="pStats" class="grid4 mb2" style="display:none"></div>
+
+  <div class="grid2 gap2">
+    <div class="card"><div class="card-title"><span class="cicon" style="background:rgba(0,212,170,.15)">💼</span>Holdings</div>
+      <div id="pTable"><div style="color:var(--t3);font-size:.84rem;tc;padding:2rem">No assets added yet</div></div>
+    </div>
+    <div class="card"><div class="card-title"><span class="cicon" style="background:rgba(139,92,246,.15)">🥧</span>Asset Allocation</div>
+      <div class="chart-box" style="height:280px"><canvas id="pieChart"></canvas></div>
+      <div id="pieLegend" class="mt2"></div>
+    </div>
+  </div>
+
+  <div class="grid2 gap2 mt3">
+    <div class="card"><div class="card-title"><span class="cicon" style="background:rgba(245,158,11,.15)">📈</span>P&amp;L Breakdown</div>
+      <div class="chart-box" style="height:250px"><canvas id="pnlChart"></canvas></div>
+    </div>
+    <div class="card"><div class="card-title"><span class="cicon" style="background:rgba(59,130,246,.15)">⚡</span>Diversification Score</div>
+      <div id="divPanel" style="padding:1rem"><div style="color:var(--t3);font-size:.84rem">Add assets to see score</div></div>
+    </div>
+  </div>
+
+  <div class="btn-row mt3">
+    <button class="btn btn-s" onclick="exportPCSV()">📥 Export CSV</button>
+    <button class="btn btn-s" onclick="exportPPDF()">📄 Export PDF</button>
+    <button class="btn btn-d btn-sm" onclick="clearPortfolio()">🗑 Clear All</button>
+  </div>
+</div>
+
+<!-- ===== MONTE CARLO ===== -->
+<div id="page-montecarlo" class="page">
+  <div class="sh"><div class="st">Monte Carlo Simulation</div><div class="ss">Probabilistic investment projections across Bear / Base / Bull scenarios</div></div>
+
+  <div class="grid2 gap2">
+    <div class="card">
+      <div class="card-title"><span class="cicon" style="background:rgba(0,212,170,.15)">🎲</span>Simulation Parameters</div>
+      <div class="grid2">
+        <div class="fg"><label class="fl">Initial Investment (₹)</label><input class="fi" id="mc-amt" type="number" value="100000"/></div>
+        <div class="fg"><label class="fl">Base Case CAGR %</label><input class="fi" id="mc-base" type="number" value="12"/></div>
+        <div class="fg"><label class="fl">Bear Case CAGR %</label><input class="fi" id="mc-bear" type="number" value="5"/></div>
+        <div class="fg"><label class="fl">Bull Case CAGR %</label><input class="fi" id="mc-bull" type="number" value="20"/></div>
+        <div class="fg"><label class="fl">Annual SIP (₹)</label><input class="fi" id="mc-sip" type="number" value="0"/></div>
+        <div class="fg"><label class="fl">Projection Years</label>
+          <select class="fi" id="mc-yrs"><option value="5">5 Years</option><option value="10" selected>10 Years</option><option value="15">15 Years</option><option value="20">20 Years</option></select>
+        </div>
+      </div>
+      <div class="btn-row"><button class="btn btn-p" onclick="runMC()">🎲 Run Simulation</button></div>
+    </div>
+    <div class="card" id="mcResults">
+      <div class="card-title"><span class="cicon" style="background:rgba(139,92,246,.15)">📊</span>Projected Outcomes</div>
+      <div style="color:var(--t3);padding:2rem;tc">Run simulation to see projections</div>
+    </div>
+  </div>
+
+  <div class="card mt3" id="mcChartCard" style="display:none">
+    <div class="card-title"><span class="cicon" style="background:rgba(0,212,170,.15)">📈</span>Growth Projection Chart</div>
+    <div class="chart-box" style="height:350px"><canvas id="mcChart"></canvas></div>
+  </div>
+
+  <div id="mcMilestones" class="mt2"></div>
+</div>
+
+<!-- ===== HISTORY ===== -->
+<div id="page-history" class="page">
+  <div class="sh flex jb aic">
+    <div><div class="st">Analysis History</div><div class="ss">Saved from localStorage — click any to reload</div></div>
+    <button class="btn btn-d btn-sm" onclick="clearAnalysisHistory()">🗑 Clear History</button>
+  </div>
+  <div id="historyList"><div style="color:var(--t3);tc;padding:3rem">No history yet. Analyze some assets first.</div></div>
+</div>
+
+</div><!-- /main -->
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   STATE
+============================================================ */
+let activePage    = 'analyzer';
+let activeAsset   = 'indian-stock';
+let chartRadar    = null, chartBar = null, chartPie = null, chartPnl = null, chartMC = null;
+let portfolioData = JSON.parse(localStorage.getItem('ide_portfolio') || '[]');
+let historyData   = JSON.parse(localStorage.getItem('ide_history')   || '[]');
+let lastResult    = null;
+
+/* ============================================================
+   INIT — set first active tab on load
+============================================================ */
+window.addEventListener('DOMContentLoaded', function () {
+  showPage('analyzer');
+  selectAsset('indian-stock', document.querySelector('.at-btn[data-asset="indian-stock"]'));
+});
+
+/* ============================================================
+   NAVIGATION — tabs
+============================================================ */
+function showPage(name) {
+  // hide all pages
+  document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active'); });
+  var pg = document.getElementById('page-' + name);
+  if (pg) pg.classList.add('active');
+
+  // update all nav-tab buttons in both topbar and mobile nav
+  document.querySelectorAll('.nav-tab').forEach(function(t){
+    t.classList.toggle('active', t.getAttribute('data-page') === name);
+  });
+
+  activePage = name;
+  if (name === 'portfolio')  renderPortfolio();
+  if (name === 'history')    renderHistory();
+}
+
+/* ============================================================
+   ASSET SELECTOR
+============================================================ */
+function selectAsset(type, el) {
+  activeAsset = type;
+  document.querySelectorAll('.at-btn').forEach(function(b){ b.classList.remove('active'); });
+  if (el) el.classList.add('active');
+  document.querySelectorAll('.aform').forEach(function(f){ f.classList.remove('active'); });
+  var form = document.getElementById('form-' + type);
+  if (form) form.classList.add('active');
+  resetResults();
+}
+
+function resetResults() {
+  document.getElementById('resultsArea').innerHTML =
+    '<div class="card tc" style="padding:3rem 1rem">' +
+    '<div style="font-size:3rem;margin-bottom:1rem">📊</div>' +
+    '<div style="font-family:var(--fd);font-size:1.1rem;font-weight:700;color:var(--t2)">Results appear here</div>' +
+    '<div style="font-size:.82rem;color:var(--t3);margin-top:6px">Fill in the form and click Analyze</div></div>';
+  document.getElementById('chartsRow').style.display = 'none';
+}
+
+function clearAnalyzerForm() {
+  var form = document.getElementById('form-' + activeAsset);
+  if (form) form.querySelectorAll('input').forEach(function(i){ i.value = ''; });
+  resetResults();
+}
+
+/* ============================================================
+   TOAST
+============================================================ */
+function toast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(function(){ t.classList.remove('show'); }, 2600);
+}
+
+/* ============================================================
+   SCORE HELPERS
+============================================================ */
+function gv(id) { return parseFloat(document.getElementById(id).value) || 0; }
+function sv(id) { return document.getElementById(id).value; }
+
+function scoreColor(s) {
+  if (s >= 80) return '#00d4aa';
+  if (s >= 70) return '#10b981';
+  if (s >= 60) return '#3b82f6';
+  if (s >= 50) return '#f59e0b';
+  return '#ef4444';
+}
+
+function getDecision(s) {
+  if (s >= 90) return { lbl:'Exceptional Buy', cls:'b-exc',  rec:'BUY' };
+  if (s >= 80) return { lbl:'Strong Buy',       cls:'b-sbuy', rec:'BUY' };
+  if (s >= 70) return { lbl:'Buy',              cls:'b-buy',  rec:'ACCUMULATE' };
+  if (s >= 60) return { lbl:'Hold',             cls:'b-hold', rec:'HOLD' };
+  if (s >= 50) return { lbl:'Watchlist',        cls:'b-watch',rec:'REDUCE' };
+  return          { lbl:'Avoid',           cls:'b-avoid',rec:'SELL' };
+}
+
+function scoreRing(score, color) {
+  var r = 52, circ = 2 * Math.PI * r;
+  var offset = circ - (score / 100) * circ;
+  return '<div class="sring">' +
+    '<svg width="120" height="120" viewBox="0 0 120 120">' +
+    '<circle cx="60" cy="60" r="' + r + '" fill="none" stroke="#1e2d42" stroke-width="10"/>' +
+    '<circle cx="60" cy="60" r="' + r + '" fill="none" stroke="' + color + '" stroke-width="10"' +
+    ' stroke-dasharray="' + circ.toFixed(2) + '" stroke-dashoffset="' + offset.toFixed(2) + '"' +
+    ' stroke-linecap="round" style="transition:stroke-dashoffset 1s ease"/>' +
+    '</svg>' +
+    '<div class="sring-label"><span class="snum" style="color:' + color + '">' + Math.round(score) + '</span><span class="ssub">/100</span></div>' +
+    '</div>';
+}
+
+function prow(label, val, maxVal, color) {
+  var pct = Math.min(100, Math.max(0, (val / maxVal) * 100));
+  return '<div class="prow">' +
+    '<span class="plbl">' + label + '</span>' +
+    '<div class="ptrack"><div class="pbar" style="width:' + pct + '%;background:' + color + '"></div></div>' +
+    '<span class="pval" style="color:' + color + '">' + val.toFixed(1) + '</span>' +
+    '</div>';
+}
+
+function fmtN(n) {
+  n = Number(n);
+  if (isNaN(n)) return '0';
+  var abs = Math.abs(n);
+  var sign = n < 0 ? '-' : '';
+  if (abs >= 10000000) return sign + (abs/10000000).toFixed(2) + ' Cr';
+  if (abs >= 100000)   return sign + (abs/100000).toFixed(2) + ' L';
+  if (abs >= 1000)     return sign + (abs/1000).toFixed(1) + 'K';
+  return sign + abs.toFixed(0);
+}
+
+/* ============================================================
+   RENDER RESULT
+============================================================ */
+function renderResult(data) {
+  var col = scoreColor(data.score);
+  var dec = data.decision;
+
+  var html = '<div class="rpanel">' +
+    '<div class="flex aic jb mb1">' +
+    '<div>' +
+    '<div style="font-family:var(--fd);font-size:1.25rem;font-weight:800">' + data.name + '</div>' +
+    '<div class="badge ' + dec.cls + ' mt1"><span>●</span>' + dec.lbl + '</div>' +
+    '</div>' +
+    '<div class="sring-wrap">' + scoreRing(data.score, col) +
+    '<div style="font-family:var(--fd);font-weight:700;font-size:.84rem;color:' + col + '">' + dec.rec + '</div>' +
+    '</div></div>' +
+    '<div class="divider"></div>' +
+    '<div style="font-size:.72rem;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;font-family:var(--fm)">Score Breakdown</div>';
+
+  data.breakdown.forEach(function(b){
+    html += prow(b.label, b.score, 100, b.color);
+  });
+
+  html += '<div class="expl">' + data.explanation + '</div>';
+
+  if (data.extra) html += data.extra;
+
+  if (data.ai) {
+    html += '<div class="ai-box mt2"><div class="ai-title"><div class="ai-dot"></div>AI Investment Coach</div>' +
+      '<div class="grid2">' +
+      '<div>' +
+      '<div class="ai-cat c-g">✅ STRENGTHS</div><ul class="ai-list">' + data.ai.strengths.map(function(s){ return '<li>'+s+'</li>'; }).join('') + '</ul>' +
+      '<div class="ai-cat c-r" style="margin-top:10px">❌ WEAKNESSES</div><ul class="ai-list">' + data.ai.weaknesses.map(function(s){ return '<li>'+s+'</li>'; }).join('') + '</ul>' +
+      '</div>' +
+      '<div>' +
+      '<div class="ai-cat c-y">⚠️ RISKS</div><ul class="ai-list">' + data.ai.risks.map(function(s){ return '<li>'+s+'</li>'; }).join('') + '</ul>' +
+      '<div class="ai-cat c-b" style="margin-top:10px">🚀 OPPORTUNITIES</div><ul class="ai-list">' + data.ai.opportunities.map(function(s){ return '<li>'+s+'</li>'; }).join('') + '</ul>' +
+      '</div></div></div>';
+  }
+
+  html += '<div class="btn-row mt2">' +
+    '<button class="btn btn-s btn-sm" onclick="exportCSV()">📥 CSV</button>' +
+    '<button class="btn btn-s btn-sm" onclick="exportPDF()">📄 PDF</button>' +
+    '</div></div>';
+
+  document.getElementById('resultsArea').innerHTML = html;
+
+  if (data.radarLabels && data.radarScores) {
+    document.getElementById('chartsRow').style.display = 'block';
+    requestAnimationFrame(function(){
+      buildRadar(data.radarLabels, data.radarScores, col);
+      buildBar(data.breakdown);
+    });
+  }
+
+  lastResult = data;
+  saveHistory(activeAsset, data.name, data.score, data);
+  toast('✅ Analysis complete — Score: ' + Math.round(data.score) + '/100');
+}
+
+/* ============================================================
+   CHARTS
+============================================================ */
+function buildRadar(labels, scores, color) {
+  var ctx = document.getElementById('radarChart');
+  if (!ctx) return;
+  if (chartRadar) { chartRadar.destroy(); chartRadar = null; }
+  chartRadar = new Chart(ctx, {
+    type: 'radar',
+    data: {
+      labels: labels,
+      datasets: [{
+        data: scores,
+        backgroundColor: color + '22',
+        borderColor: color,
+        pointBackgroundColor: color,
+        pointRadius: 4,
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        r: {
+          min: 0, max: 100,
+          ticks: { display: false },
+          grid: { color: 'rgba(30,45,66,.8)' },
+          angleLines: { color: 'rgba(30,45,66,.6)' },
+          pointLabels: { color: '#8b9cb5', font: { size: 11, family: 'DM Mono' } }
+        }
+      }
+    }
+  });
+}
+
+function buildBar(breakdown) {
+  var ctx = document.getElementById('barChart');
+  if (!ctx) return;
+  if (chartBar) { chartBar.destroy(); chartBar = null; }
+  chartBar = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: breakdown.map(function(b){ return b.label; }),
+      datasets: [{
+        label: 'Score',
+        data: breakdown.map(function(b){ return b.score; }),
+        backgroundColor: breakdown.map(function(b){ return b.color + '99'; }),
+        borderColor: breakdown.map(function(b){ return b.color; }),
+        borderWidth: 2, borderRadius: 6
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#8b9cb5', font: { size: 10, family: 'DM Mono' } }, grid: { color: 'rgba(30,45,66,.4)' } },
+        y: { min: 0, max: 100, ticks: { color: '#8b9cb5', font: { size: 10 } }, grid: { color: 'rgba(30,45,66,.4)' } }
+      }
+    }
+  });
+}
+
+/* ============================================================
+   EXPLANATION & AI HELPERS
+============================================================ */
+function buildExpl(rows) {
+  return rows.map(function(r){ return r[0] ? '✅ ' + r[1] : '⚠️ ' + r[2]; }).join('<br>');
+}
+
+function buildAI(obj) {
+  return {
+    strengths:    obj.strengths.filter(Boolean).length    ? obj.strengths.filter(Boolean)    : ['No major strengths identified'],
+    weaknesses:   obj.weaknesses.filter(Boolean).length   ? obj.weaknesses.filter(Boolean)   : ['No critical weaknesses at this time'],
+    risks:        obj.risks.filter(Boolean).length        ? obj.risks.filter(Boolean)        : ['Market risk inherent in all investments'],
+    opportunities:obj.opportunities.filter(Boolean).length? obj.opportunities.filter(Boolean): ['Monitor for better entry points']
+  };
+}
+
+/* ============================================================
+   INDIAN STOCK
+============================================================ */
+function analyzeIndianStock() {
+  var name     = sv('is-name') || 'Indian Stock';
+  var revCAGR  = gv('is-rev'),  profCAGR = gv('is-prf');
+  var roe      = gv('is-roe'),  roce     = gv('is-roce');
+  var de       = gv('is-de'),   pe       = gv('is-pe');
+  var ipe      = gv('is-ipe'),  peg      = gv('is-peg');
+  var promo    = gv('is-promo'),pledge   = gv('is-pledge');
+  var fcf      = gv('is-fcf');
+
+  // ---- sub-scores (0-100) ----
+  var revS  = revCAGR  > 25 ? 100 : revCAGR  > 15 ? 80  : revCAGR  > 10 ? 60  : revCAGR  > 5 ? 40  : 20;
+  var profS = profCAGR > 30 ? 100 : profCAGR > 20 ? 85  : profCAGR > 12 ? 65  : profCAGR > 5 ? 45  : 25;
+  var roeS  = roe      > 25 ? 100 : roe      > 18 ? 80  : roe      > 12 ? 60  : roe      > 8 ? 40  : 20;
+  var roceS = roce     > 30 ? 100 : roce     > 20 ? 80  : roce     > 15 ? 60  : roce     > 10? 40  : 20;
+  var fcfS  = fcf      > 20 ? 100 : fcf      > 12 ? 80  : fcf      > 5  ? 60  : fcf      > 0 ? 40  : 15;
+  var peR   = (ipe > 0) ? pe / ipe : 1;
+  var peS   = peR < 0.7 ? 100 : peR < 0.9 ? 85 : peR < 1.0 ? 70 : peR < 1.1 ? 55 : peR < 1.3 ? 40 : peR < 1.5 ? 30 : 15;
+  var pegS  = peg < 0.5 ? 100 : peg < 1.0 ? 85 : peg < 1.5 ? 70 : peg < 2.0 ? 50 : peg < 3.0 ? 30 : 15;
+  var deS   = de  < 0.3 ? 100 : de  < 0.5 ? 85  : de  < 1.0 ? 70 : de  < 2.0 ? 50 : de  < 3.0 ? 30 : 15;
+  var promoS  = promo  > 65 ? 100 : promo  > 55 ? 80 : promo  > 45 ? 60 : promo  > 35 ? 40 : 20;
+  var pledgeS = pledge < 1  ? 100 : pledge < 5  ? 85 : pledge < 15 ? 60 : pledge < 30 ? 40 : pledge < 50 ? 25 : 10;
+
+  // ---- weighted category scores (already 0-100) ----
+  var growthS  = revS  * 0.5  + profS  * 0.5;
+  var profitS  = roeS  * 0.35 + roceS  * 0.35 + fcfS   * 0.30;
+  var valS     = peS   * 0.55 + pegS   * 0.45;
+  var healthS  = deS;
+  var mgmtS    = promoS * 0.6 + pledgeS * 0.4;
+
+  // ---- final weighted total ----
+  var total = growthS * 0.25 + profitS * 0.25 + valS * 0.20 + healthS * 0.15 + mgmtS * 0.15;
+
+  var breakdown = [
+    { label:'Growth (25%)',          score: growthS, color:'#00d4aa' },
+    { label:'Profitability (25%)',   score: profitS, color:'#3b82f6' },
+    { label:'Valuation (20%)',       score: valS,    color:'#f59e0b' },
+    { label:'Financial Health (15%)',score: healthS, color:'#8b5cf6' },
+    { label:'Management (15%)',      score: mgmtS,   color:'#10b981' }
+  ];
+
+  var expl = buildExpl([
+    [revCAGR  > 15,  'Revenue CAGR of <strong>' + revCAGR  + '%</strong> shows strong growth.',             'Revenue CAGR of ' + revCAGR  + '% needs improvement.'],
+    [profCAGR > 20,  'Profit CAGR of <strong>' + profCAGR + '%</strong> is excellent.',                     'Profit CAGR of ' + profCAGR + '% is below par.'],
+    [roe      > 18,  'ROE of <strong>' + roe + '%</strong> shows high capital efficiency.',                  'ROE of ' + roe + '% suggests moderate efficiency.'],
+    [de       < 0.5, 'Debt/Equity of <strong>' + de + '</strong> — financially healthy.',                   'D/E of ' + de + ' indicates notable leverage.'],
+    [peR      < 1.0, 'Stock is <strong>undervalued vs sector</strong> (PE ' + pe + ' vs ' + ipe + ').',     'Valuation is <strong>at premium</strong> vs sector (PE ' + pe + ' vs ' + ipe + ').'],
+    [promo    > 55,  'Promoter holding <strong>' + promo + '%</strong> — management conviction is high.',   'Promoter holding of ' + promo + '% is modest.'],
+    [pledge   < 5,   'Pledge is negligible at <strong>' + pledge + '%</strong> — low governance risk.',     'Promoter pledge of ' + pledge + '% warrants monitoring.']
+  ]);
+
+  var ai = buildAI({
+    strengths:    [revCAGR > 15 && 'Revenue CAGR of ' + revCAGR + '% shows sustained demand', roe > 18 && 'ROE ' + roe + '% — efficient capital allocation', de < 0.5 && 'Low debt (D/E ' + de + ') provides safety margin', promo > 60 && 'High promoter holding (' + promo + '%) signals confidence'],
+    weaknesses:   [revCAGR <= 10 && 'Revenue CAGR of ' + revCAGR + '% below industry peers', de > 1 && 'D/E of ' + de + ' could strain cash flows', pledge > 10 && 'Pledge of ' + pledge + '% poses forced-selling risk', peg > 2 && 'PEG ' + peg + ' — growth already priced in'],
+    risks:        ['Valuation risk if earnings disappoint (PE: ' + pe + ')', pledge > 5 && 'Promoter pledging could trigger margin calls', 'Sector cyclicality may impact revenue trends'],
+    opportunities:[fcf > 0 && 'FCF growth of ' + fcf + '% can fund expansion or buybacks', roe > 15 && 'High ROE enables efficient reinvestment at scale', peR < 1 && 'Discount to sector PE creates re-rating potential']
+  });
+
+  renderResult({
+    name, score: total, decision: getDecision(total),
+    breakdown, explanation: expl, ai,
+    radarLabels: ['Revenue\nGrowth','Profit\nGrowth','ROE','ROCE','Valuation','Management'],
+    radarScores: [revS, profS, roeS, roceS, peS, promoS]
+  });
+}
+
+/* ============================================================
+   US STOCK
+============================================================ */
+function analyzeUSStock() {
+  var name    = sv('us-name') || 'US Stock';
+  var rev     = gv('us-rev'), eps = gv('us-eps');
+  var gm      = gv('us-gm'),  nm  = gv('us-nm');
+  var pe      = gv('us-pe'),  ps  = gv('us-ps');
+  var de      = gv('us-de'),  fcf = gv('us-fcf');
+  var ins     = gv('us-ins'), bb  = gv('us-bb');
+
+  var revS  = rev > 20 ? 100 : rev > 12 ? 75 : rev > 8 ? 55 : rev > 3 ? 35 : 15;
+  var epsS  = eps > 25 ? 100 : eps > 15 ? 80 : eps > 10? 60 : eps > 5 ? 40 : 20;
+  var gmS   = gm  > 60 ? 100 : gm  > 45 ? 80 : gm  > 30? 60 : gm  > 20? 40 : 20;
+  var nmS   = nm  > 25 ? 100 : nm  > 15 ? 75 : nm  > 8 ? 55 : nm  > 3 ? 35 : 15;
+  var peS   = pe  < 15 ? 100 : pe  < 20 ? 80 : pe  < 25? 65 : pe  < 35? 45 : pe < 50 ? 30 : 15;
+  var psS   = ps  < 2  ? 100 : ps  < 5  ? 75 : ps  < 10? 55 : ps  < 15? 35 : 15;
+  var deS   = de  < 0.5? 100 : de  < 1  ? 80 : de  < 2 ? 60 : de  < 3 ? 40 : 20;
+  var fcfS  = fcf > 8  ? 100 : fcf > 5  ? 80 : fcf > 2 ? 60 : fcf > 0 ? 40 : 20;
+  var insS  = ins > 10 ? 100 : ins > 5  ? 80 : ins > 2 ? 60 : ins > 0 ? 40 : 20;
+  var bbS   = bb  > 5  ? 100 : bb  > 2  ? 80 : bb  > 0 ? 60 : 30;
+
+  var growthS  = revS * 0.5  + epsS * 0.5;
+  var qualityS = gmS  * 0.4  + nmS  * 0.6;
+  var valS     = peS  * 0.6  + psS  * 0.4;
+  var healthS  = deS  * 0.5  + fcfS * 0.5;
+  var mgmtS    = insS * 0.5  + bbS  * 0.5;
+
+  var total = growthS * 0.25 + qualityS * 0.25 + valS * 0.20 + healthS * 0.15 + mgmtS * 0.15;
+
+  var breakdown = [
+    { label:'Growth (25%)',          score: growthS,  color:'#00d4aa' },
+    { label:'Quality Margins (25%)', score: qualityS, color:'#3b82f6' },
+    { label:'Valuation (20%)',       score: valS,     color:'#f59e0b' },
+    { label:'Financial Health (15%)',score: healthS,  color:'#8b5cf6' },
+    { label:'Management (15%)',      score: mgmtS,    color:'#10b981' }
+  ];
+
+  var expl = buildExpl([
+    [rev > 12, 'Revenue CAGR of <strong>' + rev + '%</strong> shows strong momentum.',             'Revenue growth of ' + rev + '% is below expectations.'],
+    [gm  > 45, 'Gross margin of <strong>' + gm  + '%</strong> reflects strong pricing power.',    'Gross margin of ' + gm + '% is competitive but not exceptional.'],
+    [nm  > 15, 'Net margin of <strong>' + nm    + '%</strong> is excellent.',                      'Net margin of ' + nm + '% needs improvement.'],
+    [de  < 1,  'Debt/EBITDA of <strong>' + de   + '</strong> — conservatively leveraged.',        'Leverage at ' + de + 'x EBITDA is notable.'],
+    [pe  < 25, 'PE of <strong>' + pe     + '</strong> appears reasonably valued.',                 'PE of ' + pe + ' suggests growth is heavily priced in.'],
+    [ins > 5,  'Insider ownership of <strong>' + ins + '%</strong> — skin in the game.',           'Low insider ownership at ' + ins + '%.']
+  ]);
+
+  var ai = buildAI({
+    strengths:    [rev > 12 && 'Revenue CAGR ' + rev + '% shows sustained demand', gm > 45 && 'Gross margin ' + gm + '% — durable competitive moat', ins > 5 && 'Insider ownership aligns management with shareholders'],
+    weaknesses:   [rev <= 8 && 'Revenue ' + rev + '% trails sector leaders', pe > 35 && 'Premium PE ' + pe + ' limits margin of safety', nm <= 8 && 'Thin margins ' + nm + '% at risk in cost cycles'],
+    risks:        ['Macro sensitivity: high-PE stocks face compression in rate hike cycles', de > 2 && 'Leverage ' + de + 'x EBITDA adds financial risk', 'FX risk for Indian investors holding USD assets'],
+    opportunities:[fcf > 5 && 'FCF yield ' + fcf + '% supports buybacks/dividends', bb > 2 && 'Buyback yield ' + bb + '% creates EPS accretion', eps > 15 && 'EPS CAGR ' + eps + '% can compound wealth significantly']
+  });
+
+  renderResult({
+    name, score: total, decision: getDecision(total),
+    breakdown, explanation: expl, ai,
+    radarLabels: ['Revenue\nGrowth','EPS\nGrowth','Gross\nMargin','Net\nMargin','Valuation','Leverage'],
+    radarScores: [revS, epsS, gmS, nmS, peS, Math.max(0, 100 - de * 20)]
+  });
+}
+
+/* ============================================================
+   INDEX FUND
+============================================================ */
+function analyzeIndexFund() {
+  var name = sv('if-name') || 'Index Fund';
+  var er   = gv('if-er'), te = gv('if-te'), aum = gv('if-aum'), age = gv('if-age');
+
+  var teS  = te  < 0.02 ? 100 : te  < 0.05 ? 85 : te  < 0.1  ? 70 : te  < 0.2  ? 50 : te  < 0.5  ? 30 : 15;
+  var erS  = er  < 0.05 ? 100 : er  < 0.10 ? 90 : er  < 0.20 ? 75 : er  < 0.50 ? 55 : er  < 1.0  ? 35 : 15;
+  var aumS = aum > 10000? 100 : aum > 5000 ? 85 : aum > 1000 ? 70 : aum > 500  ? 55 : aum > 100  ? 40 : 25;
+  var ageS = age > 10   ? 100 : age > 7    ? 80 : age > 5    ? 65 : age > 3    ? 50 : age > 1    ? 35 : 20;
+
+  var total = teS * 0.40 + erS * 0.30 + aumS * 0.20 + ageS * 0.10;
+
+  var breakdown = [
+    { label:'Tracking Error (40%)', score: teS,  color:'#00d4aa' },
+    { label:'Expense Ratio (30%)',  score: erS,  color:'#3b82f6' },
+    { label:'AUM Size (20%)',       score: aumS, color:'#f59e0b' },
+    { label:'Fund Age (10%)',       score: ageS, color:'#8b5cf6' }
+  ];
+
+  var expl = buildExpl([
+    [te  < 0.05, 'Tracking error <strong>' + te + '%</strong> — excellent index replication.',   'Tracking error of ' + te + '% means imperfect replication.'],
+    [er  < 0.10, 'Expense ratio <strong>' + er + '%</strong> — very investor-friendly.',          'Expense ratio ' + er + '% is high for a passive fund.'],
+    [aum > 5000, 'AUM ₹' + aum + ' Cr — <strong>high liquidity and low impact cost</strong>.',   'Smaller AUM ₹' + aum + ' Cr may have higher impact costs.'],
+    [age > 5,    'Fund age ' + age + ' years — <strong>proven track record</strong>.',             'Relatively new fund (' + age + ' yrs) — limited data.']
+  ]);
+
+  var ai = buildAI({
+    strengths:    [te < 0.05 && 'Tracking error ' + te + '% — near-perfect replication', er < 0.1 && 'Ultra-low expense ratio ' + er + '% maximises returns', aum > 5000 && 'Large AUM ensures easy entry/exit'],
+    weaknesses:   [te > 0.1 && 'Tracking error ' + te + '% creates return drag', er > 0.3 && 'Expense ratio ' + er + '% is high for passive vehicle', age < 3 && 'Limited fund history — performance data insufficient'],
+    risks:        ['Index concentration risk — top 10 stocks may dominate', 'Passive funds offer no downside protection', te > 0.1 && 'High TE compounds negatively over long periods'],
+    opportunities:[er < 0.1 && 'Low costs compound significantly over 15-20 year horizon', aum > 1000 && 'Large AUM enables tight bid-ask spreads', 'SIP investing benefits from rupee cost averaging']
+  });
+
+  renderResult({
+    name, score: total, decision: getDecision(total),
+    breakdown, explanation: expl, ai,
+    radarLabels: ['Tracking\nError','Expense\nRatio','AUM','Fund Age'],
+    radarScores: [teS, erS, aumS, ageS]
+  });
+}
+
+/* ============================================================
+   ETF
+============================================================ */
+function analyzeETF() {
+  var name = sv('etf-name') || 'ETF';
+  var er   = gv('etf-er'), te = gv('etf-te'), aum = gv('etf-aum'), cagr = gv('etf-cagr');
+
+  var teS   = te   < 0.03 ? 100 : te   < 0.08 ? 80 : te   < 0.15 ? 60 : te   < 0.30 ? 40 : 20;
+  var erS   = er   < 0.05 ? 100 : er   < 0.10 ? 85 : er   < 0.20 ? 70 : er   < 0.50 ? 50 : er < 1 ? 30 : 15;
+  var aumS  = aum  > 10000? 100 : aum  > 3000 ? 80 : aum  > 500  ? 60 : aum  > 100  ? 40 : 20;
+  var cagrS = cagr > 15   ? 100 : cagr > 12   ? 80 : cagr > 10   ? 65 : cagr > 7    ? 50 : cagr > 5 ? 35 : 20;
+
+  var total = teS * 0.35 + erS * 0.30 + aumS * 0.20 + cagrS * 0.15;
+
+  var breakdown = [
+    { label:'Tracking Error (35%)',  score: teS,   color:'#00d4aa' },
+    { label:'Expense Ratio (30%)',   score: erS,   color:'#3b82f6' },
+    { label:'AUM & Liquidity (20%)', score: aumS,  color:'#f59e0b' },
+    { label:'Index CAGR (15%)',      score: cagrS, color:'#8b5cf6' }
+  ];
+
+  var expl = buildExpl([
+    [te   < 0.08, 'Low tracking error <strong>' + te + '%</strong> — ETF closely follows index.',   'Tracking error ' + te + '% is worth monitoring.'],
+    [er   < 0.10, 'Expense ratio <strong>' + er + '%</strong> — among cheapest instruments.',       'Expense ratio ' + er + '% reduces net returns.'],
+    [aum  > 3000, 'High AUM ensures <strong>tight spreads and deep liquidity</strong>.',             'Lower AUM may cause wider bid-ask spreads.'],
+    [cagr > 12,   'Underlying index CAGR of <strong>' + cagr + '%</strong> is strong.',             'Underlying CAGR of ' + cagr + '% is modest.']
+  ]);
+
+  var ai = buildAI({
+    strengths:    [te < 0.08 && 'Excellent tracking fidelity (' + te + '% error)', er < 0.1 && 'Minimal expense ratio ' + er + '% maximises compounding', cagr > 12 && 'Strong underlying returns at ' + cagr + '% CAGR'],
+    weaknesses:   [te > 0.15 && 'Tracking error ' + te + '% creates meaningful slippage', aum < 100 && 'Low AUM ₹' + aum + ' Cr creates liquidity risk', cagr <= 7 && 'CAGR ' + cagr + '% may not beat inflation adequately'],
+    risks:        ['Market risk mirrors underlying index', 'No active management to navigate drawdowns', aum < 500 && 'Low liquidity ETF may have large bid-ask spreads'],
+    opportunities:[er < 0.1 && 'Low cost enables superior long-term compounding', cagr > 12 && 'Index CAGR ' + cagr + '% creates substantial wealth over decades']
+  });
+
+  renderResult({
+    name, score: total, decision: getDecision(total),
+    breakdown, explanation: expl, ai,
+    radarLabels: ['Tracking\nError','Expense\nRatio','AUM','Index\nCAGR'],
+    radarScores: [teS, erS, aumS, cagrS]
+  });
+}
+
+/* ============================================================
+   BOND
+============================================================ */
+function analyzeBond() {
+  var name     = sv('bond-name') || 'Bond';
+  var rating   = sv('bond-rating');
+  var yld      = gv('bond-yield'), dur = gv('bond-dur'), liq = gv('bond-liq');
+
+  var rMap = { 'AAA':100, 'AA+':88, 'AA':78, 'AA-':68, 'A':55, 'BBB':40 };
+  var ratingS = rMap[rating] || 40;
+  var yldS    = yld > 10 ? 100 : yld > 9 ? 85 : yld > 8 ? 70 : yld > 7 ? 55 : yld > 6 ? 40 : 25;
+  var liqS    = Math.min(100, liq * 10);
+  var durS    = dur < 2  ? 90  : dur < 4 ? 75  : dur < 6 ? 60 : dur < 8 ? 45 : dur < 12 ? 30 : 15;
+
+  var total = ratingS * 0.50 + yldS * 0.25 + liqS * 0.15 + durS * 0.10;
+
+  var breakdown = [
+    { label:'Credit Rating (50%)', score: ratingS, color:'#00d4aa' },
+    { label:'Yield (25%)',         score: yldS,    color:'#3b82f6' },
+    { label:'Liquidity (15%)',     score: liqS,    color:'#f59e0b' },
+    { label:'Duration Risk (10%)', score: durS,    color:'#8b5cf6' }
+  ];
+
+  var expl = buildExpl([
+    [ratingS >= 88, 'Credit rating <strong>' + rating + '</strong> — highest safety grade.',       'Credit rating ' + rating + ' carries meaningful credit risk.'],
+    [yld     >  8,  'Yield of <strong>' + yld + '%</strong> is attractive vs fixed deposits.',     'Yield of ' + yld + '% is modest.'],
+    [liq     >= 7,  'Liquidity score <strong>' + liq + '/10</strong> — easy to exit if needed.',   'Liquidity score ' + liq + '/10 — may be hard to exit early.'],
+    [dur     <  5,  'Duration <strong>' + dur + ' years</strong> — low interest rate sensitivity.', 'Duration of ' + dur + ' years increases interest rate risk.']
+  ]);
+
+  var ai = buildAI({
+    strengths:    [ratingS >= 88 && rating + ' rating reflects top-tier creditworthiness', yld > 8 && 'Yield ' + yld + '% beats most FDs and savings instruments', liq >= 7 && 'High liquidity allows flexible exit'],
+    weaknesses:   [ratingS < 70 && rating + ' rating carries meaningful default risk', dur > 7 && 'Long duration ' + dur + 'Y — sensitive to rate changes', yld <= 7 && 'Yield ' + yld + '% may not compensate for inflation+tax'],
+    risks:        ['Interest rate risk: rising rates reduce bond price', dur > 5 && 'Longer duration amplifies price volatility', ratingS < 70 && 'Credit downgrade risk for sub-AA bonds'],
+    opportunities:[yld > 9 && 'High yield ' + yld + '% offers attractive real returns', dur < 3 && 'Short duration protects against rate cycle uncertainty', ratingS >= 80 && 'Investment-grade with stable expected returns']
+  });
+
+  renderResult({
+    name, score: total, decision: getDecision(total),
+    breakdown, explanation: expl, ai,
+    radarLabels: ['Credit\nRating','Yield','Liquidity','Duration\nRisk'],
+    radarScores: [ratingS, yldS, liqS, durS]
+  });
+}
+
+/* ============================================================
+   SGB
+============================================================ */
+function analyzeSGB() {
+  var name     = sv('sgb-name') || 'SGB';
+  var purchase = gv('sgb-buy'), current = gv('sgb-cur');
+  var years    = gv('sgb-yrs'), rate    = gv('sgb-rate');
+
+  if (!purchase || !current) { toast('⚠️ Enter purchase and current price'); return; }
+
+  var capGain      = ((current - purchase) / purchase) * 100;
+  var interestTot  = purchase * (rate / 100) * years;
+  var totalRet     = capGain + (rate * years);
+  var xirrApprox   = (Math.pow((current + interestTot) / purchase, 1 / Math.max(1, years)) - 1) * 100;
+
+  var capS   = capGain    > 30 ? 100 : capGain    > 15 ? 80 : capGain    > 5  ? 60 : capGain    > 0  ? 45 : 20;
+  var yldS   = rate       > 2.5? 100 : rate       > 2.0? 80 : rate       > 1.5? 60 : 40;
+  var yrsS   = years      > 5  ? 80  : years      > 3  ? 65 : years      > 1  ? 50 : 35;
+  var xirrS  = xirrApprox > 15 ? 100 : xirrApprox > 12 ? 85 : xirrApprox > 10 ? 70 : xirrApprox > 8 ? 55 : xirrApprox > 5 ? 40 : 25;
+
+  var total = capS * 0.40 + xirrS * 0.30 + yldS * 0.20 + yrsS * 0.10;
+
+  var breakdown = [
+    { label:'Capital Appreciation (40%)', score: capS,  color:'#00d4aa' },
+    { label:'XIRR Return (30%)',          score: xirrS, color:'#f59e0b' },
+    { label:'Interest Rate (20%)',        score: yldS,  color:'#3b82f6' },
+    { label:'Time Remaining (10%)',       score: yrsS,  color:'#8b5cf6' }
+  ];
+
+  var expl = buildExpl([
+    [capGain    > 15, 'Capital appreciation of <strong>' + capGain.toFixed(1)    + '%</strong> is excellent.',        'Capital appreciation stands at ' + capGain.toFixed(1) + '%.'],
+    [xirrApprox > 12, 'Estimated XIRR ~<strong>' + xirrApprox.toFixed(1)         + '%</strong> beats most FI.',       'XIRR ~' + xirrApprox.toFixed(1) + '% is moderate.'],
+    [rate       >= 2.5,'Annual interest <strong>' + rate                           + '%</strong> — tax-advantaged.',   'Interest rate of ' + rate + '% is low.'],
+    [years      > 4,  '<strong>' + years + ' years remaining</strong> — time for further appreciation.',              'Only ' + years + ' years left — limited upside from holding.']
+  ]);
+
+  var extra = '<div class="grid3 mt2">' +
+    '<div class="stat"><div class="slbl">Capital Gain</div><div class="sval ' + (capGain >= 0 ? 'c-g' : 'c-r') + '">' + capGain.toFixed(1) + '%</div></div>' +
+    '<div class="stat"><div class="slbl">Est. XIRR</div><div class="sval c-acc">' + xirrApprox.toFixed(1) + '%</div></div>' +
+    '<div class="stat"><div class="slbl">Total Return</div><div class="sval c-b">' + totalRet.toFixed(1) + '%</div></div>' +
+    '</div>';
+
+  var ai = buildAI({
+    strengths:    [capGain > 15 && 'Strong capital appreciation of ' + capGain.toFixed(1) + '%', rate > 2 && 'Sovereign interest ' + rate + '% p.a. — zero credit risk', 'Tax-free redemption at maturity (8-year hold)'],
+    weaknesses:   [capGain < 5 && 'Minimal capital appreciation of ' + capGain.toFixed(1) + '%', years < 2 && 'Limited time to maturity reduces compounding', 'Annual interest is taxable as income'],
+    risks:        ['Gold price volatility can reduce returns if gold corrects', 'Opportunity cost vs equity if gold underperforms', 'Illiquid in secondary market before maturity'],
+    opportunities:[xirrApprox > 10 && 'XIRR ' + xirrApprox.toFixed(1) + '% competitive with hybrid funds', 'Gold hedges INR depreciation and inflation', years > 5 && years + ' years left for further compounding']
+  });
+
+  renderResult({
+    name, score: total, decision: getDecision(total),
+    breakdown, explanation: expl, extra, ai,
+    radarLabels: ['Capital\nGain','XIRR\nReturn','Interest','Time\nLeft'],
+    radarScores: [capS, xirrS, yldS, yrsS]
+  });
+}
+
+/* ============================================================
+   HISTORY
+============================================================ */
+function saveHistory(type, name, score, data) {
+  var item = { id: Date.now(), type: type, name: name, score: score, data: data, date: new Date().toLocaleString('en-IN') };
+  historyData.unshift(item);
+  if (historyData.length > 50) historyData = historyData.slice(0, 50);
+  localStorage.setItem('ide_history', JSON.stringify(historyData));
+}
+
+function renderHistory() {
+  var el = document.getElementById('historyList');
+  if (!historyData.length) {
+    el.innerHTML = '<div style="color:var(--t3);text-align:center;padding:3rem">No history yet.</div>';
+    return;
+  }
+  el.innerHTML = historyData.map(function(h) {
+    var dec = getDecision(h.score);
+    return '<div class="hi" onclick="loadHistoryItem(' + h.id + ')">' +
+      '<div><div style="font-weight:600;font-size:.9rem">' + h.name + '</div>' +
+      '<div class="hi-meta">' + h.type.toUpperCase() + ' • ' + h.date + '</div></div>' +
+      '<div class="flex aic" style="gap:10px">' +
+      '<div style="font-family:var(--fd);font-size:1.2rem;font-weight:800;color:' + scoreColor(h.score) + '">' + Math.round(h.score) + '</div>' +
+      '<span class="badge ' + dec.cls + '" style="font-size:.7rem">' + dec.lbl + '</span>' +
+      '</div></div>';
+  }).join('');
+}
+
+function loadHistoryItem(id) {
+  var item = historyData.find(function(h){ return h.id === id; });
+  if (!item || !item.data) return;
+  showPage('analyzer');
+  var assetMap = { 'indian-stock':0,'us-stock':1,'index-fund':2,'etf':3,'bond':4,'sgb':5 };
+  var idx = assetMap.hasOwnProperty(item.type) ? assetMap[item.type] : 0;
+  var btns = document.querySelectorAll('.at-btn');
+  if (btns[idx]) selectAsset(item.type, btns[idx]);
+  setTimeout(function(){ renderResult(item.data); }, 150);
+}
+
+function clearAnalysisHistory() {
+  if (!confirm('Clear all history?')) return;
+  historyData = [];
+  localStorage.removeItem('ide_history');
+  renderHistory();
+  toast('History cleared');
+}
+
+/* ============================================================
+   PORTFOLIO
+============================================================ */
+function addAsset() {
+  var name = document.getElementById('p-name').value.trim();
+  var type = document.getElementById('p-type').value;
+  var inv  = parseFloat(document.getElementById('p-inv').value) || 0;
+  var cur  = parseFloat(document.getElementById('p-cur').value) || 0;
+  if (!name || !inv || !cur) { toast('⚠️ Please fill all fields'); return; }
+  portfolioData.push({ id: Date.now(), name: name, type: type, invested: inv, current: cur });
+  localStorage.setItem('ide_portfolio', JSON.stringify(portfolioData));
+  document.getElementById('p-name').value = '';
+  document.getElementById('p-inv').value  = '';
+  document.getElementById('p-cur').value  = '';
+  renderPortfolio();
+  toast('✅ Asset added');
+}
+
+function removeAsset(id) {
+  portfolioData = portfolioData.filter(function(a){ return a.id !== id; });
+  localStorage.setItem('ide_portfolio', JSON.stringify(portfolioData));
+  renderPortfolio();
+}
+
+function renderPortfolio() {
+  var pTable = document.getElementById('pTable');
+  var pStats = document.getElementById('pStats');
+  var divPanel = document.getElementById('divPanel');
+
+  if (!portfolioData.length) {
+    pTable.innerHTML = '<div style="color:var(--t3);font-size:.84rem;text-align:center;padding:2rem">No assets added yet</div>';
+    pStats.style.display = 'none';
+    divPanel.innerHTML = '<div style="color:var(--t3);font-size:.84rem">Add assets to see score</div>';
+    if (chartPie) { chartPie.destroy(); chartPie = null; }
+    if (chartPnl) { chartPnl.destroy(); chartPnl = null; }
+    return;
+  }
+
+  var totalInv = portfolioData.reduce(function(s,a){ return s + a.invested; }, 0);
+  var totalCur = portfolioData.reduce(function(s,a){ return s + a.current;  }, 0);
+  var totalPL  = totalCur - totalInv;
+  var plPct    = totalInv > 0 ? ((totalPL / totalInv) * 100).toFixed(1) : '0.0';
+
+  pStats.style.display = 'grid';
+  pStats.innerHTML =
+    '<div class="stat"><div class="slbl">Total Invested</div><div class="sval c-acc">₹' + fmtN(totalInv) + '</div></div>' +
+    '<div class="stat"><div class="slbl">Current Value</div><div class="sval ' + (totalCur >= totalInv ? 'c-g' : 'c-r') + '">₹' + fmtN(totalCur) + '</div></div>' +
+    '<div class="stat"><div class="slbl">Total P&L</div><div class="sval ' + (totalPL >= 0 ? 'c-g' : 'c-r') + '">' + (totalPL >= 0 ? '+' : '') + '₹' + fmtN(totalPL) + '</div>' +
+    '<div style="font-size:.74rem;' + (totalPL >= 0 ? 'color:var(--green)' : 'color:var(--red)') + '">' + (totalPL >= 0 ? '▲' : '▼') + ' ' + Math.abs(plPct) + '%</div></div>' +
+    '<div class="stat"><div class="slbl">Holdings</div><div class="sval c-b">' + portfolioData.length + '</div></div>';
+
+  // Table
+  var rows = portfolioData.map(function(a) {
+    var pl   = a.current - a.invested;
+    var plp  = a.invested > 0 ? ((pl / a.invested) * 100).toFixed(1) : '0.0';
+    var alloc= totalCur > 0 ? ((a.current / totalCur) * 100).toFixed(1) : '0.0';
+    return '<tr>' +
+      '<td style="font-weight:600">' + a.name + '</td>' +
+      '<td><span class="tag tag-b">' + a.type + '</span></td>' +
+      '<td style="font-family:var(--fm)">₹' + fmtN(a.invested) + '</td>' +
+      '<td style="font-family:var(--fm)">₹' + fmtN(a.current) + '</td>' +
+      '<td style="font-family:var(--fm);color:' + (pl >= 0 ? 'var(--green)' : 'var(--red)') + '">' + (pl >= 0 ? '+' : '') + '₹' + fmtN(pl) + ' (' + plp + '%)</td>' +
+      '<td style="font-family:var(--fm)">' + alloc + '%</td>' +
+      '<td><button class="btn btn-d btn-sm" onclick="removeAsset(' + a.id + ')">✕</button></td>' +
+      '</tr>';
+  }).join('');
+  pTable.innerHTML = '<div class="tw"><table><thead><tr><th>Asset</th><th>Type</th><th>Invested</th><th>Current</th><th>P&L</th><th>Alloc%</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+
+  // Pie chart
+  var typeGroups = {};
+  portfolioData.forEach(function(a){ typeGroups[a.type] = (typeGroups[a.type] || 0) + (a.current || 0); });
+  var PIE_COLORS = ['#00d4aa','#3b82f6','#f59e0b','#8b5cf6','#ef4444','#10b981','#f97316','#ec4899','#06b6d4','#84cc16'];
+  var pieCanvas = document.getElementById('pieChart');
+  if (pieCanvas) {
+    if (chartPie) { chartPie.destroy(); chartPie = null; }
+    chartPie = new Chart(pieCanvas.getContext('2d'), {
+      type: 'doughnut',
+      data: {
+        labels: Object.keys(typeGroups),
+        datasets: [{ data: Object.values(typeGroups), backgroundColor: PIE_COLORS.slice(0, Object.keys(typeGroups).length), borderWidth: 2, borderColor: '#111827' }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(c){ return ' ' + c.label + ': ₹' + fmtN(c.raw) + ' (' + ((c.raw / totalCur) * 100).toFixed(1) + '%)'; } } } }
+      }
+    });
+  }
+
+  document.getElementById('pieLegend').innerHTML = Object.keys(typeGroups).map(function(k, i){
+    return '<span style="display:inline-flex;align-items:center;gap:4px;margin:3px 6px;font-size:.72rem;font-family:var(--fm)">' +
+      '<span style="width:9px;height:9px;border-radius:50%;background:' + PIE_COLORS[i] + ';display:inline-block"></span>' + k + '</span>';
+  }).join('');
+
+  // P&L bar chart
+  var pnlCanvas = document.getElementById('pnlChart');
+  if (pnlCanvas) {
+    if (chartPnl) { chartPnl.destroy(); chartPnl = null; }
+    chartPnl = new Chart(pnlCanvas.getContext('2d'), {
+      type: 'bar',
+      data: {
+        labels: portfolioData.map(function(a){ return a.name.length > 10 ? a.name.slice(0,10) + '…' : a.name; }),
+        datasets: [
+          { label:'Invested', data: portfolioData.map(function(a){ return a.invested; }), backgroundColor:'rgba(59,130,246,.6)', borderColor:'#3b82f6', borderWidth:2, borderRadius:4 },
+          { label:'Current',  data: portfolioData.map(function(a){ return a.current;  }), backgroundColor: portfolioData.map(function(a){ return a.current >= a.invested ? 'rgba(16,185,129,.6)' : 'rgba(239,68,68,.6)'; }), borderColor: portfolioData.map(function(a){ return a.current >= a.invested ? '#10b981' : '#ef4444'; }), borderWidth:2, borderRadius:4 }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { labels: { color:'#8b9cb5', font:{ size:11 } } } },
+        scales: {
+          x: { ticks:{ color:'#8b9cb5', font:{ size:10 } }, grid:{ color:'rgba(30,45,66,.4)' } },
+          y: { ticks:{ color:'#8b9cb5', font:{ size:10 } }, grid:{ color:'rgba(30,45,66,.4)' } }
+        }
+      }
+    });
+  }
+
+  // Diversification
+  var numTypes = Object.keys(typeGroups).length;
+  var maxType  = Math.max.apply(null, Object.values(typeGroups));
+  var conc     = totalCur > 0 ? maxType / totalCur : 1;
+  var divScore = Math.min(100, numTypes * 12 + (1 - conc) * 55 + portfolioData.length * 2);
+  var divCol   = divScore > 70 ? '#10b981' : divScore > 50 ? '#f59e0b' : '#ef4444';
+  var divLbl   = divScore > 70 ? 'Well Diversified' : divScore > 50 ? 'Moderately Diversified' : 'Concentrated';
+
+  divPanel.innerHTML =
+    '<div style="text-align:center">' + scoreRing(divScore, divCol) + '</div>' +
+    '<div style="text-align:center;margin-top:.5rem;font-weight:700;font-family:var(--fd);color:' + divCol + '">' + divLbl + '</div>' +
+    '<div class="mt2">' +
+    prow('Asset Types', numTypes, 10, '#00d4aa') +
+    prow('Holdings', portfolioData.length, 20, '#3b82f6') +
+    prow('Spread Score', Math.round((1 - conc) * 100), 100, '#f59e0b') +
+    '</div>' +
+    '<div class="expl mt2" style="font-size:.78rem">' +
+    (numTypes < 3 ? '⚠️ Add more asset classes to reduce concentration.' : '✅ Good spread across ' + numTypes + ' asset types.') +
+    '<br>' +
+    (conc > 0.5 ? '⚠️ One class dominates — consider rebalancing.' : '✅ No single asset class dominates.') +
+    '</div>';
+}
+
+function clearPortfolio() {
+  if (!confirm('Clear entire portfolio?')) return;
+  portfolioData = [];
+  localStorage.removeItem('ide_portfolio');
+  renderPortfolio();
+  toast('Portfolio cleared');
+}
+
+/* ============================================================
+   MONTE CARLO
+============================================================ */
+function runMC() {
+  var amount = parseFloat(document.getElementById('mc-amt').value)  || 100000;
+  var base   = parseFloat(document.getElementById('mc-base').value) || 12;
+  var bear   = parseFloat(document.getElementById('mc-bear').value) || 5;
+  var bull   = parseFloat(document.getElementById('mc-bull').value) || 20;
+  var sip    = parseFloat(document.getElementById('mc-sip').value)  || 0;
+  var years  = parseInt(document.getElementById('mc-yrs').value)    || 10;
+
+  function project(rate, yrs) {
+    var val = amount, arr = [amount];
+    for (var y = 1; y <= yrs; y++) { val = val * (1 + rate / 100) + sip; arr.push(Math.round(val)); }
+    return arr;
+  }
+
+  var bearArr = project(bear, years);
+  var baseArr = project(base, years);
+  var bullArr = project(bull, years);
+  var finalBear = bearArr[years], finalBase = baseArr[years], finalBull = bullArr[years];
+  var totalInv  = amount + sip * years;
+
+  document.getElementById('mcResults').innerHTML =
+    '<div class="card-title"><span class="cicon" style="background:rgba(139,92,246,.15)">📊</span>Projected Outcomes</div>' +
+    '<div class="sc-grid">' +
+    '<div class="sc-card sc-bear"><div class="sc-name" style="color:#ef4444">🐻 Bear</div><div class="sc-val" style="color:#ef4444">₹' + fmtN(finalBear) + '</div><div style="font-size:.7rem;color:var(--t2);margin-top:4px;font-family:var(--fm)">' + bear + '% CAGR</div></div>' +
+    '<div class="sc-card sc-base"><div class="sc-name" style="color:#3b82f6">📊 Base</div><div class="sc-val" style="color:#3b82f6">₹' + fmtN(finalBase) + '</div><div style="font-size:.7rem;color:var(--t2);margin-top:4px;font-family:var(--fm)">' + base + '% CAGR</div></div>' +
+    '<div class="sc-card sc-bull"><div class="sc-name" style="color:#10b981">🐂 Bull</div><div class="sc-val" style="color:#10b981">₹' + fmtN(finalBull) + '</div><div style="font-size:.7rem;color:var(--t2);margin-top:4px;font-family:var(--fm)">' + bull + '% CAGR</div></div>' +
+    '</div>' +
+    '<div style="height:1px;background:var(--border);margin:1rem 0"></div>' +
+    '<div style="font-size:.8rem;color:var(--t2)">Total Invested: <strong style="color:var(--t1)">₹' + fmtN(totalInv) + '</strong></div>' +
+    '<div style="font-size:.8rem;margin-top:6px">Base Multiple: <strong class="c-acc">' + (finalBase/amount).toFixed(1) + 'x</strong> &nbsp;|&nbsp; Bull Multiple: <strong class="c-g">' + (finalBull/amount).toFixed(1) + 'x</strong></div>';
+
+  // Milestones
+  var milestoneYears = [5, 10, 15].filter(function(y){ return y <= years; });
+  if (milestoneYears.length) {
+    var mHTML = '<div class="grid3 mt2">';
+    milestoneYears.forEach(function(y) {
+      var b = project(bear, y)[y], bs = project(base, y)[y], bl = project(bull, y)[y];
+      mHTML += '<div class="card"><div class="card-title" style="font-size:.84rem;margin-bottom:.8rem">' + y + ' Year Projection</div>' +
+        '<div style="font-size:.73rem;font-family:var(--fm)">Bear: <strong style="color:#ef4444">₹' + fmtN(b) + '</strong></div>' +
+        '<div style="font-size:.73rem;font-family:var(--fm);margin-top:4px">Base: <strong style="color:#3b82f6">₹' + fmtN(bs) + '</strong></div>' +
+        '<div style="font-size:.73rem;font-family:var(--fm);margin-top:4px">Bull: <strong style="color:#10b981">₹' + fmtN(bl) + '</strong></div></div>';
+    });
+    mHTML += '</div>';
+    document.getElementById('mcMilestones').innerHTML = mHTML;
+  }
+
+  // Chart
+  document.getElementById('mcChartCard').style.display = 'block';
+  var labels = Array.from({ length: years + 1 }, function(_, i){ return 'Y' + i; });
+  var mcCanvas = document.getElementById('mcChart');
+  if (chartMC) { chartMC.destroy(); chartMC = null; }
+  chartMC = new Chart(mcCanvas, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [
+        { label: 'Bear (' + bear + '%)', data: bearArr, borderColor:'#ef4444', backgroundColor:'rgba(239,68,68,.05)', tension:.4, borderWidth:2, pointRadius:0 },
+        { label: 'Base (' + base + '%)', data: baseArr, borderColor:'#3b82f6', backgroundColor:'rgba(59,130,246,.08)', tension:.4, borderWidth:2.5, pointRadius:0, fill:true },
+        { label: 'Bull (' + bull + '%)', data: bullArr, borderColor:'#10b981', backgroundColor:'rgba(16,185,129,.05)', tension:.4, borderWidth:2, pointRadius:0 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { color:'#8b9cb5', font:{ size:11 } } } },
+      scales: {
+        x: { ticks:{ color:'#8b9cb5', font:{ size:10 } }, grid:{ color:'rgba(30,45,66,.4)' } },
+        y: { ticks:{ color:'#8b9cb5', font:{ size:10 }, callback: function(v){ return '₹' + fmtN(v); } }, grid:{ color:'rgba(30,45,66,.4)' } }
+      }
+    }
+  });
+
+  toast('✅ Monte Carlo simulation complete');
+}
+
+/* ============================================================
+   EXPORT
+============================================================ */
+function exportCSV() {
+  if (!lastResult) return;
+  var lines = ['Asset,' + lastResult.name, 'Score,' + Math.round(lastResult.score), 'Decision,' + lastResult.decision.lbl, '', 'Category,Score'];
+  lastResult.breakdown.forEach(function(b){ lines.push(b.label + ',' + b.score.toFixed(1)); });
+  download('analysis_' + lastResult.name.replace(/\s/g,'_') + '.csv', lines.join('\n'), 'text/csv');
+  toast('📥 CSV exported');
+}
+
+function exportPDF() {
+  if (!lastResult) return;
+  var d = lastResult;
+  var html = '<!DOCTYPE html><html><head><title>' + d.name + '</title><style>body{font-family:Arial,sans-serif;max-width:800px;margin:40px auto;padding:20px}h2{color:#0d1420}.score{font-size:2.5rem;font-weight:900;color:#00d4aa}.badge{display:inline-block;padding:5px 13px;border-radius:20px;background:#e6fff9;color:#00a882;font-weight:700;margin:8px 0}table{width:100%;border-collapse:collapse;margin-top:16px}th,td{padding:9px 12px;text-align:left;border-bottom:1px solid #eee}th{background:#f5f5f5;font-weight:700}.expl{background:#f9f9f9;padding:14px;border-left:4px solid #00d4aa;margin-top:16px;line-height:1.7}.foot{margin-top:28px;font-size:.75rem;color:#888}</style></head><body>' +
+    '<h2>' + d.name + '</h2><div class="score">' + Math.round(d.score) + '<span style="font-size:1rem;color:#888">/100</span></div>' +
+    '<div class="badge">' + d.decision.lbl + ' — ' + d.decision.rec + '</div>' +
+    '<table><tr><th>Category</th><th>Score</th></tr>' + d.breakdown.map(function(b){ return '<tr><td>' + b.label + '</td><td><strong>' + b.score.toFixed(1) + '</strong></td></tr>'; }).join('') + '</table>' +
+    '<div class="expl">' + d.explanation.replace(/<[^>]+>/g,' ') + '</div>' +
+    '<div class="foot">Investment Decision Engine • ' + new Date().toLocaleString('en-IN') + '</div></body></html>';
+  var w = window.open('', '_blank'); w.document.write(html); w.document.close(); w.print();
+}
+
+function exportPCSV() {
+  if (!portfolioData.length) { toast('No portfolio data'); return; }
+  var totalCur = portfolioData.reduce(function(s,a){ return s+a.current; }, 0);
+  var lines = ['Asset,Type,Invested,Current,P&L,P&L%,Alloc%'];
+  portfolioData.forEach(function(a) {
+    var pl = a.current - a.invested, plp = a.invested ? ((pl/a.invested)*100).toFixed(1) : '0';
+    var alloc = totalCur ? ((a.current/totalCur)*100).toFixed(1) : '0';
+    lines.push([a.name, a.type, a.invested, a.current, pl.toFixed(0), plp+'%', alloc+'%'].join(','));
+  });
+  download('portfolio.csv', lines.join('\n'), 'text/csv');
+  toast('📥 Portfolio CSV exported');
+}
+
+function exportPPDF() {
+  if (!portfolioData.length) { toast('No portfolio data'); return; }
+  var totalCur = portfolioData.reduce(function(s,a){ return s+a.current; }, 0);
+  var totalInv = portfolioData.reduce(function(s,a){ return s+a.invested; }, 0);
+  var html = '<!DOCTYPE html><html><head><title>Portfolio</title><style>body{font-family:Arial,sans-serif;max-width:900px;margin:40px auto;padding:20px}table{width:100%;border-collapse:collapse;margin-top:16px}th,td{padding:9px 12px;text-align:left;border-bottom:1px solid #eee}th{background:#f5f5f5;font-weight:700}.g{color:green}.r{color:red}.foot{margin-top:24px;font-size:.75rem;color:#888}</style></head><body>' +
+    '<h1>Portfolio Report</h1>' +
+    '<p>Invested: <strong>₹' + fmtN(totalInv) + '</strong> | Current: <strong>₹' + fmtN(totalCur) + '</strong></p>' +
+    '<table><tr><th>Asset</th><th>Type</th><th>Invested</th><th>Current</th><th>P&L</th><th>Alloc%</th></tr>' +
+    portfolioData.map(function(a) {
+      var pl = a.current-a.invested, plp = a.invested ? ((pl/a.invested)*100).toFixed(1):'0', alloc = totalCur ? ((a.current/totalCur)*100).toFixed(1):'0';
+      return '<tr><td>' + a.name + '</td><td>' + a.type + '</td><td>₹' + fmtN(a.invested) + '</td><td>₹' + fmtN(a.current) + '</td><td class="' + (pl>=0?'g':'r') + '">' + (pl>=0?'+':'') + '₹' + fmtN(pl) + ' (' + plp + '%)</td><td>' + alloc + '%</td></tr>';
+    }).join('') +
+    '</table><div class="foot">Investment Decision Engine • ' + new Date().toLocaleString('en-IN') + '</div></body></html>';
+  var w = window.open('','_blank'); w.document.write(html); w.document.close(); w.print();
+}
+
+function download(filename, content, type) {
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([content], { type: type }));
+  a.download = filename; a.click();
+}
+</script>
+</body>
+</html>
