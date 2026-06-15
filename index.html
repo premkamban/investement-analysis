@@ -170,6 +170,11 @@ tr:hover td{background:rgba(255,255,255,.02);}
 .hi:hover{border-color:var(--accent);}
 .hi-meta{font-size:.7rem;color:var(--t3);font-family:var(--fm);}
 
+/* GOLD VS INDEX */
+.gold-sip-card{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.3);border-radius:14px;padding:1.2rem;}
+.index-sip-card{background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.3);border-radius:14px;padding:1.2rem;}
+.gsi-title{font-family:var(--fd);font-weight:700;font-size:.92rem;margin-bottom:.9rem;display:flex;align-items:center;gap:8px;}
+
 /* TOAST */
 .toast{position:fixed;bottom:2rem;right:2rem;background:var(--card);border:1px solid var(--accent);
   border-radius:10px;padding:12px 18px;font-size:.84rem;z-index:1000;display:none;
@@ -217,6 +222,7 @@ tr:hover td{background:rgba(255,255,255,.02);}
       <button class="nav-tab" data-page="portfolio" onclick="showPage('portfolio')">Portfolio</button>
       <button class="nav-tab" data-page="montecarlo" onclick="showPage('montecarlo')">Monte Carlo</button>
       <button class="nav-tab" data-page="history" onclick="showPage('history')">History</button>
+      <button class="nav-tab" data-page="gold" onclick="showPage('gold')">🥇 Gold vs Index</button>
     </div>
   </div>
 </div>
@@ -226,6 +232,7 @@ tr:hover td{background:rgba(255,255,255,.02);}
   <button class="nav-tab" data-page="portfolio" onclick="showPage('portfolio')">💼 Portfolio</button>
   <button class="nav-tab" data-page="montecarlo" onclick="showPage('montecarlo')">🎲 Monte Carlo</button>
   <button class="nav-tab" data-page="history" onclick="showPage('history')">📋 History</button>
+  <button class="nav-tab" data-page="gold" onclick="showPage('gold')">🥇 Gold vs Index</button>
 </div>
 
 <div class="main">
@@ -485,6 +492,79 @@ tr:hover td{background:rgba(255,255,255,.02);}
   <div id="historyList"><div style="color:var(--t3);tc;padding:3rem">No history yet. Analyze some assets first.</div></div>
 </div>
 
+<!-- ===== GOLD VS INDEX ===== -->
+<div id="page-gold" class="page">
+  <div class="sh"><div class="st">🥇 Gold vs Index</div><div class="ss">Live gold prices across Indian cities &amp; Gold vs Nifty 50 SIP comparison</div></div>
+
+  <!-- LIVE GOLD PRICE CALCULATOR -->
+  <div class="card">
+    <div class="card-title"><span class="cicon" style="background:rgba(245,158,11,.15)">🥇</span>Live Gold Price Calculator</div>
+    <div class="grid4">
+      <div class="fg"><label class="fl">City</label>
+        <select class="fi" id="gold-city" onchange="updateGoldPrice()">
+          <option>Mumbai</option><option>Delhi</option><option>Chennai</option><option>Kolkata</option>
+          <option>Bangalore</option><option>Hyderabad</option><option>Pune</option><option>Ahmedabad</option>
+          <option>Jaipur</option><option>Lucknow</option>
+        </select>
+      </div>
+      <div class="fg"><label class="fl">Karat</label>
+        <select class="fi" id="gold-karat" onchange="updateGoldPrice()">
+          <option value="24">24K</option>
+          <option value="22" selected>22K</option>
+          <option value="18">18K</option>
+          <option value="14">14K</option>
+        </select>
+      </div>
+      <div class="fg"><label class="fl">Weight (grams)</label>
+        <input class="fi" id="gold-weight" type="number" value="10" min="0" step="0.1" oninput="updateGoldPrice()"/>
+      </div>
+      <div class="fg"><label class="fl">&nbsp;</label>
+        <button class="btn btn-s" style="width:100%" onclick="fetchGoldPrice()">🔄 Refresh</button>
+      </div>
+    </div>
+
+    <div id="goldPriceDisplay" class="mt2">
+      <div class="tc" style="padding:2rem;color:var(--t2)">⏳ Fetching live gold price…</div>
+    </div>
+
+    <div style="font-size:.74rem;color:var(--t3);margin-top:1rem">
+      Prices exclude GST (3%) and making charges. City variation is indicative.
+    </div>
+  </div>
+
+  <!-- SIP COMPARISON -->
+  <div class="card mt3">
+    <div class="card-title"><span class="cicon" style="background:rgba(0,212,170,.15)">📈</span>SIP Comparison: Gold vs Nifty 50</div>
+
+    <div class="grid2">
+      <div class="fg"><label class="fl">Monthly SIP (₹)</label>
+        <input class="fi" id="sip-amount" type="number" value="15000" min="0" oninput="updateSIPComparison()"/>
+      </div>
+      <div class="fg"><label class="fl">Start Year</label>
+        <select class="fi" id="sip-start-year" onchange="updateSIPComparison()">
+          <option>2016</option><option>2017</option><option>2018</option><option>2019</option><option>2020</option>
+          <option>2021</option><option>2022</option><option>2023</option><option>2024</option><option>2025</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="grid2 gap2 mt2">
+      <div class="gold-sip-card">
+        <div class="gsi-title"><span class="cicon" style="background:rgba(245,158,11,.2)">🥇</span>Gold SIP</div>
+        <div id="goldSIPResult"></div>
+      </div>
+      <div class="index-sip-card">
+        <div class="gsi-title"><span class="cicon" style="background:rgba(59,130,246,.2)">📈</span>Nifty 50 SIP</div>
+        <div id="indexSIPResult"></div>
+      </div>
+    </div>
+
+    <div id="sipSummary" class="expl mt2"></div>
+
+    <div class="chart-box mt3" style="height:350px"><canvas id="sipChart"></canvas></div>
+  </div>
+</div>
+
 </div><!-- /main -->
 <div class="toast" id="toast"></div>
 
@@ -494,10 +574,13 @@ tr:hover td{background:rgba(255,255,255,.02);}
 ============================================================ */
 let activePage    = 'analyzer';
 let activeAsset   = 'indian-stock';
-let chartRadar    = null, chartBar = null, chartPie = null, chartPnl = null, chartMC = null;
+let chartRadar    = null, chartBar = null, chartPie = null, chartPnl = null, chartMC = null, chartGold = null;
 let portfolioData = JSON.parse(localStorage.getItem('ide_portfolio') || '[]');
 let historyData   = JSON.parse(localStorage.getItem('ide_history')   || '[]');
 let lastResult    = null;
+let goldTabLoaded = false;
+let gold24kPerGram = null;
+let goldPriceIsLive = false;
 
 /* ============================================================
    INIT — set first active tab on load
@@ -524,6 +607,11 @@ function showPage(name) {
   activePage = name;
   if (name === 'portfolio')  renderPortfolio();
   if (name === 'history')    renderHistory();
+  if (name === 'gold' && !goldTabLoaded) {
+    goldTabLoaded = true;
+    fetchGoldPrice();
+    updateSIPComparison();
+  }
 }
 
 /* ============================================================
@@ -1406,6 +1494,171 @@ function download(filename, content, type) {
   var a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([content], { type: type }));
   a.download = filename; a.click();
+}
+
+/* ============================================================
+   GOLD VS INDEX
+============================================================ */
+const GOLD_CITY_OFFSETS = {
+  Mumbai: 0, Delhi: 8, Chennai: 5, Kolkata: 3,
+  Bangalore: 6, Hyderabad: 4, Pune: 2, Ahmedabad: 7,
+  Jaipur: 9, Lucknow: 10
+};
+const GOLD_KARAT_PURITY = { '24': 1.000, '22': 0.916, '18': 0.750, '14': 0.583 };
+const GOLD_FALLBACK_24K_PER_GRAM = 15607; // June 2026 IBJA rate (₹1,56,070 / 10g)
+
+const GOLD_NIFTY_HISTORY = [
+  { year: 2016, gold10g: 28623,  nifty: 8185  },
+  { year: 2017, gold10g: 29667,  nifty: 10531 },
+  { year: 2018, gold10g: 31438,  nifty: 10862 },
+  { year: 2019, gold10g: 38977,  nifty: 12168 },
+  { year: 2020, gold10g: 48651,  nifty: 13982 },
+  { year: 2021, gold10g: 47910,  nifty: 17354 },
+  { year: 2022, gold10g: 52670,  nifty: 18105 },
+  { year: 2023, gold10g: 65330,  nifty: 21731 },
+  { year: 2024, gold10g: 72000,  nifty: 23645 },
+  { year: 2025, gold10g: 96000,  nifty: 24000 },
+  { year: 2026, gold10g: 156070, nifty: 23623 }
+];
+const GOLD_SIP_CAGR  = 0.185;
+const NIFTY_SIP_CAGR = 0.112;
+
+/* ---- live price fetch ---- */
+async function fetchGoldPrice() {
+  var disp = document.getElementById('goldPriceDisplay');
+  disp.innerHTML = '<div class="tc" style="padding:2rem;color:var(--t2)">⏳ Fetching live gold price…</div>';
+
+  try {
+    var xauRes = await fetch('https://gold-api.com/price/XAU');
+    if (!xauRes.ok) throw new Error('XAU fetch failed');
+    var xauData = await xauRes.json();
+    var usdPerOz = parseFloat(xauData.price);
+
+    var fxRes = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
+    if (!fxRes.ok) throw new Error('FX fetch failed');
+    var fxData = await fxRes.json();
+    var usdToInr = parseFloat(fxData.rates && fxData.rates.INR);
+
+    if (!usdPerOz || !usdToInr) throw new Error('Invalid API response');
+
+    gold24kPerGram = (usdPerOz * usdToInr) / 31.1035;
+    goldPriceIsLive = true;
+  } catch (err) {
+    gold24kPerGram = GOLD_FALLBACK_24K_PER_GRAM;
+    goldPriceIsLive = false;
+  }
+
+  updateGoldPrice();
+}
+
+/* ---- price calculator ---- */
+function updateGoldPrice() {
+  if (gold24kPerGram == null) return;
+
+  var city   = sv('gold-city');
+  var karat  = sv('gold-karat');
+  var weight = parseFloat(document.getElementById('gold-weight').value) || 0;
+
+  var base24k = gold24kPerGram + (GOLD_CITY_OFFSETS[city] || 0);
+  var perGram = base24k * GOLD_KARAT_PURITY[karat];
+  var total   = perGram * weight;
+
+  var statusBadge = goldPriceIsLive
+    ? '<span class="tag" style="background:rgba(16,185,129,.15);color:var(--green)">● LIVE PRICE</span>'
+    : '<span class="tag" style="background:rgba(239,68,68,.15);color:var(--red)">● FALLBACK RATE (API unavailable)</span>';
+
+  document.getElementById('goldPriceDisplay').innerHTML =
+    '<div class="grid2 gap2">' +
+      '<div class="stat"><div class="slbl">Total Price (' + weight + 'g · ' + karat + 'K · ' + city + ')</div>' +
+        '<div class="sval c-acc">₹' + total.toLocaleString('en-IN', {maximumFractionDigits:0}) + '</div></div>' +
+      '<div class="stat"><div class="slbl">Price / Gram (' + karat + 'K)</div>' +
+        '<div class="sval" style="color:var(--yellow)">₹' + perGram.toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2}) + '</div></div>' +
+    '</div>' +
+    '<div class="mt2">' + statusBadge + '</div>';
+}
+
+/* ---- SIP comparison ---- */
+function sipCorpus(monthly, cagrAnnual, months) {
+  if (months <= 0) return 0;
+  var r = cagrAnnual / 12;
+  return monthly * ((Math.pow(1 + r, months) - 1) / r) * (1 + r);
+}
+
+function updateSIPComparison() {
+  var monthly   = parseFloat(document.getElementById('sip-amount').value) || 0;
+  var startYear = parseInt(document.getElementById('sip-start-year').value, 10);
+  var endYear   = 2026;
+  var years     = endYear - startYear;
+  var months    = years * 12;
+
+  var goldCorpus  = sipCorpus(monthly, GOLD_SIP_CAGR,  months);
+  var niftyCorpus = sipCorpus(monthly, NIFTY_SIP_CAGR, months);
+  var invested    = monthly * months;
+  var goldProfit  = goldCorpus  - invested;
+  var niftyProfit = niftyCorpus - invested;
+  var diff        = goldCorpus - niftyCorpus;
+
+  document.getElementById('goldSIPResult').innerHTML =
+    '<div class="slbl">Corpus Value</div><div class="sval" style="color:var(--yellow)">₹' + fmtN(goldCorpus) + '</div>' +
+    '<div class="mt1" style="font-size:.82rem;color:var(--t2)">Profit: <span class="c-g">+₹' + fmtN(goldProfit) + '</span></div>' +
+    '<div style="font-size:.74rem;color:var(--t3);margin-top:4px;font-family:var(--fm)">CAGR assumed: 18.5%</div>';
+
+  document.getElementById('indexSIPResult').innerHTML =
+    '<div class="slbl">Corpus Value</div><div class="sval c-b">₹' + fmtN(niftyCorpus) + '</div>' +
+    '<div class="mt1" style="font-size:.82rem;color:var(--t2)">Profit: <span class="c-g">+₹' + fmtN(niftyProfit) + '</span></div>' +
+    '<div style="font-size:.74rem;color:var(--t3);margin-top:4px;font-family:var(--fm)">CAGR assumed: 11.2%</div>';
+
+  var winner = diff >= 0 ? 'Gold' : 'Nifty 50';
+  document.getElementById('sipSummary').innerHTML =
+    'Invested <strong class="c-acc">₹' + fmtN(invested) + '</strong> over <strong>' + years + ' year' + (years === 1 ? '' : 's') + '</strong> · ' +
+    '<strong style="color:' + (diff >= 0 ? 'var(--yellow)' : 'var(--blue)') + '">' + winner + ' outperformed by ₹' + fmtN(Math.abs(diff)) + '</strong>';
+
+  buildSIPChart(startYear, monthly);
+}
+
+function buildSIPChart(startYear, monthly) {
+  var labels = [], goldSeries = [], indexSeries = [], investedSeries = [];
+  var goldVal = 0, indexVal = 0, invested = 0;
+
+  for (var y = startYear; y <= 2026; y++) {
+    if (y > startYear) {
+      var prev = GOLD_NIFTY_HISTORY.find(function(h){ return h.year === y - 1; });
+      var curr = GOLD_NIFTY_HISTORY.find(function(h){ return h.year === y; });
+      goldVal  *= curr.gold10g / prev.gold10g;
+      indexVal *= curr.nifty   / prev.nifty;
+    }
+    goldVal  += monthly * 12;
+    indexVal += monthly * 12;
+    invested += monthly * 12;
+
+    labels.push(String(y));
+    goldSeries.push(Math.round(goldVal));
+    indexSeries.push(Math.round(indexVal));
+    investedSeries.push(Math.round(invested));
+  }
+
+  var canvas = document.getElementById('sipChart');
+  if (!canvas) return;
+  if (chartGold) { chartGold.destroy(); chartGold = null; }
+  chartGold = new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [
+        { label: 'Gold SIP Corpus',     data: goldSeries,     borderColor:'#f59e0b', backgroundColor:'rgba(245,158,11,.08)', tension:.35, borderWidth:2.5, pointRadius:2, fill:true },
+        { label: 'Nifty 50 SIP Corpus', data: indexSeries,    borderColor:'#3b82f6', backgroundColor:'rgba(59,130,246,.08)', tension:.35, borderWidth:2.5, pointRadius:2, fill:true },
+        { label: 'Total Invested',      data: investedSeries, borderColor:'#8b9cb5', backgroundColor:'transparent', borderDash:[5,5], tension:0, borderWidth:2, pointRadius:0 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { color:'#8b9cb5', font:{ size:11 } } } },
+      scales: {
+        x: { ticks:{ color:'#8b9cb5', font:{ size:10 } }, grid:{ color:'rgba(30,45,66,.4)' } },
+        y: { ticks:{ color:'#8b9cb5', font:{ size:10 }, callback: function(v){ return '₹' + fmtN(v); } }, grid:{ color:'rgba(30,45,66,.4)' } }
+      }
+    }
+  });
 }
 </script>
 </body>
